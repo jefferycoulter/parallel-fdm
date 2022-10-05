@@ -1,0 +1,4 @@
+#ifndef PARALLEL_INCL
+#define PARALLEL_INCL
+
+#endif // PARALLEL_INCL

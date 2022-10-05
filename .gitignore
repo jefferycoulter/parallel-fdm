@@ -1,0 +1,23 @@
+# directories
+.vs/
+.vscode/
+build/
+data/
+
+# cmake files
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+.env.cmake
+
+# other files
+.DS_STORE
+main
