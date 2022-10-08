@@ -38,7 +38,6 @@ for i in range(len(data)):
     im = ax_a.imshow(data[i][:][:], origin="lower", animated=True)
     if i == 0:
         im = ax_a.imshow(data[i][:][:])  # show an initial one first
-    fig_a.suptitle("time = {:.2f} ms".format(i*dt))
     ims.append([im])
 
 ani = animation.ArtistAnimation(fig_a, ims, interval=50, blit=True, repeat_delay=1000)

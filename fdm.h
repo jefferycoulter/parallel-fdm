@@ -1,34 +1,14 @@
 #ifndef FDM_INCL
 #define FDM_INCL
 
-/**
- * @brief store space/time StepSize in a single struct to reduce parameter passing
- */
-typedef struct 
-{
-    float dx, dy, dz; // spatial step size
-    float dt; // temporal step size
-} StepSize;
+#include "parallel.h"
+
+#include <math.h>
 
 /**
- * @brief store data arrays in a single struct to reduce parameter passing
+ * @brief boundary conditions that can be used for fdm
  */
-typedef struct
-{
-    float *next; // stores data after FDM iteration
-    float *now; // used to compute next iteration
-} Data;
-
-/**
- * @brief specifies number of dimensions and the size of the global simulation 
- * domain along each direction
- * @param n
- */
-typedef struct
-{
-    int n; // number of dimensions
-    int x, y, z; // dimension sizes
-} Dimension;
+enum BC{Dirichlet, VonNeumann};
 
 /**
  * @brief run finite difference method for a given number of iterations
@@ -39,7 +19,7 @@ typedef struct
  * @param dx space step size
  * @param cells number of cells along each axis
  */
-void ComputeFD(Data data, StepSize dX, int time_steps, int cells[3]);
+void ComputeFD(Subdomain subdomain, int bc, int time_steps);
 
 /**
  * @brief compute a single temporal iteration of forward-time central-space (FTCS) finite difference 
@@ -50,21 +30,40 @@ void ComputeFD(Data data, StepSize dX, int time_steps, int cells[3]);
  * @param dx space step size
  * @param dim number of spatial dimensions
  */
-void FTCS(Data data, StepSize dX, int cells[3]);
+void FTCS(Subdomain subdomain, int bc);
+
+/**
+ * @brief compute interior points. same for both dirichlet and von neumann
+ * @param data data to compute finite differences on
+ * @param dX spatial and temporal step sizes
+ * @param cells number of cells along each dimension
+ */
+void InteriorFD(Subdomain subdomain);
+
+/**
+ * @brief compute boundary terms depending on whether dirichlet or von neuman is being used
+ * @param data data to compute finite differences on
+ * @param bc 
+ * @param dX spatial and temporal step sizes
+ * @param cells number of cells along each dimension
+ */
+void BoundaryFD(Subdomain subdomain, int bc);
+
+void CreateShapeArray(Subdomain subdomain, float radius);
 
 /**
  * @brief apply boundary conditions to the domain
  * @param data simulation domain where boundary conditions will be applied
  * @param cells spatial discretizaion along each axis
  */
-void SetBoundaryConditions(Data data, int cells[3]);
+void SetBoundaryConditions(Subdomain subdomain);
 
 /**
  * @brief apply initial conditions to the domain
  * @param data simulation domain where boundary conditions will be applied
  * @param cells spatial discretizaion along each axis
  */
-void SetInitialConditions(float *data, int cells[3]);
+void SetInitialConditions(Subdomain subdomain);
 
 /**
  * @brief discretize the process's domain (a subdomain)
@@ -72,7 +71,7 @@ void SetInitialConditions(float *data, int cells[3]);
  * @param dx spatial step size
  * @param cells resulting array returns number of discretizations along each direction
  */
-void DiscretizeSubdomain(Dimension dim, StepSize dX, int cells[3]);
+void DiscretizeSubdomain(Subdomain subdomain);
 
 /**
  * @brief allocate memory for domain arrays
@@ -80,6 +79,6 @@ void DiscretizeSubdomain(Dimension dim, StepSize dX, int cells[3]);
  * @param data_current the "current" iteration solution for computing next iteration
  * @param cells spatial discretization along each axis
  */
-void GenerateSpatialArrays(Data *data, int cells[3]);
+void GenerateArraysFDM(Subdomain subdomain);
 
 #endif // FDM_INCL

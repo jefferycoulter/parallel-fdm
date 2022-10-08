@@ -1,34 +1,42 @@
 #include "fdm.h"
 #include "io.h"
+#include "parallel.h"
 
 #include <mpi.h>
 #include <stdlib.h>
 
 int main(int argc, char** argv)
 {
-    Data data = { 0 };
-    // input corresponds to dx, dy, dz, dt
-    StepSize step_sizes = { .dx = 0.5, .dy = 0.5, .dz = 0.0, .dt = 0.05 };
-    Dimension dim = { .n = 2, .x = 20, .y = 20, .z = 0 };
+    int n_proc, rank;
+    int time_steps = 1000; // max time steps to iterate
+    float radius;
+    //initialize the subdomain on each process
+    Subdomain subdomain = { .n_proc = n_proc, .rank = rank,
+                            .n_dims = 2, .dims_g = { 20, 20, 0},
+                            .dx = 0.5, .dy = 0.5, .dz = 0.0, 
+                            .dt = 0.05,
+                            .mu_x = subdomain.dt / pow(subdomain.dx, 2.0),
+                            .mu_y = subdomain.dt / pow(subdomain.dy, 2.0),
+                            .mu_z = subdomain.dt / pow(subdomain.dz, 2.0)
+                        };
 
-    int time_steps = 1000;
-    // number of finite difference cells or grid boxes along each dimension
-    // pre-set to 3 as maximum number of dimensions and zeroed out so if 
-    // no third dimension is used then it will be zero
-    int cells[3] = { 0 }; 
+    // get information related to subdomain position in the global context
+    ComputeSubdomainDims(subdomain);
+    GetSubdomainBounds(subdomain);
 
-    // generate subdomains from global dimension sizes before discretizing and computing
+    // prepare subdomain for fdm
+    DiscretizeSubdomain(subdomain);
+    GenerateArraysFDM(subdomain);
+    CreateShapeArray(subdomain, radius);
 
-    DiscretizeSubdomain(dim, step_sizes, cells);
-    GenerateSpatialArrays(&data, cells); // macro? also, should be done after creating subdomains
+    SetBoundaryConditions(subdomain);
+    SetInitialConditions(subdomain);
 
-    SetBoundaryConditions(data, cells);
-    SetInitialConditions(data.now, cells);
+    ComputeFD(subdomain, Dirichlet, time_steps);
 
-    ComputeFD(data, step_sizes, time_steps, cells);
-
-    free(data.next);
-    free(data.now);
+    free(subdomain.shape_arr);
+    free(subdomain.u_now);
+    free(subdomain.u_next);
     
     return 0;
 }

@@ -12,9 +12,11 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR} )
 add_executable(${PROJECT_NAME} main.c
     fdm.h
     io.h
+    parallel.h
 
     fdm.c
     io.c
+    parallel.c
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${MPI_C_INCLUDE_DIRS})
