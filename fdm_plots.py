@@ -13,7 +13,11 @@ data = np.delete(data, -1, 1)
 data = data.reshape(1001, 40, 40)
         
 
-#fig, ax = plt.subplots(nrows=2, ncols=2)
+fig, ax = plt.subplots()
+shape = np.genfromtxt("data/shape.csv", dtype=float, delimiter=",")
+shape = np.delete(shape, -1, 0)
+shape = shape.reshape(200,200)
+ax.imshow(shape)
 
 
 # =============================================================================
@@ -32,14 +36,14 @@ data = data.reshape(1001, 40, 40)
 # fig.colorbar(im, cax=cbar_ax)
 # =============================================================================
 
-fig_a, ax_a = plt.subplots()
-ims = []
-for i in range(len(data)):
-    im = ax_a.imshow(data[i][:][:], origin="lower", animated=True)
-    if i == 0:
-        im = ax_a.imshow(data[i][:][:])  # show an initial one first
-    ims.append([im])
+#fig_a, ax_a = plt.subplots()
+#ims = []
+#for i in range(len(data)):
+#    im = ax_a.imshow(data[i][:][:], origin="lower", animated=True)
+#    if i == 0:
+#        im = ax_a.imshow(data[i][:][:])  # show an initial one first
+#    ims.append([im])
 
-ani = animation.ArtistAnimation(fig_a, ims, interval=50, blit=True, repeat_delay=1000)
-ani.save("animations/movie.gif")
+#ani = animation.ArtistAnimation(fig_a, ims, interval=50, blit=True, repeat_delay=1000)
+#ani.save("animations/movie.gif")
 

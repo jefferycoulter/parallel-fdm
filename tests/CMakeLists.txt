@@ -1,0 +1,1 @@
+add_subdirectory(test_shape_array)
