@@ -31,7 +31,9 @@ typedef struct
     float *u_global; // global solution array
 } Subdomain;
 
-void PrepareSubdomains(Subdomain *subdomain);
+Subdomain *CreateSubdomain(int nproc, int rank);
+
+void GetInput(Subdomain *sd, int nproc, int rank);
 
 void SplitProcessorsAlongDims(Subdomain *subdomain);
 
@@ -48,6 +50,12 @@ void GetSubdomainGridBounds(Subdomain *subdomain);
  * @param subdomain 
  */
 void ComputeSubdomainGrid(Subdomain *subdomain);
+
+/**
+ * @brief allocate memory for FDM arrays
+ * @param subdomain the subdomain to generate arrays for
+ */
+void AllocateArraysFDM(Subdomain *subdomain);
 
 /**
  * @brief shift the coordinates in a given subdomain so that the center of the global subdomain (dim_X / 2, dim_y / 2) 

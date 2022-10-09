@@ -16,17 +16,13 @@ int main(int argc, char** argv)
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     // initialize the subdomain struct on each process
-    Subdomain subdomain = { .n_proc = n_proc, .rank = rank,
-                            .n_dims = 2, .dims_g = { 20, 20, 0 }, .grid_g = { 100, 100, 1 },
-                            .dt = 0.05 // 50 milliseconds
-                        };
+    Subdomain *subdomain = CreateSubdomain(n_proc, rank);
 
     // perform further initializations and allocations
-    PrepareSubdomains(&subdomain);
 
     // setup for finite difference computations
     DetermineStepSizes(subdomain);
-    AllocateArraysFDM(&subdomain);
+    AllocateArraysFDM(subdomain);
     CreateShapeArray(subdomain, radius);
 
     SetBoundaryConditions(subdomain);

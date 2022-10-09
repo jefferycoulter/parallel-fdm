@@ -19,7 +19,7 @@ enum BC{Dirichlet, VonNeumann};
  * @param bc boundary conditions (Dirichlet or VonNeumann)
  * @param time_steps max number of iterations for computations
  */
-void ComputeFD(Subdomain subdomain, int bc, int time_steps);
+void ComputeFD(Subdomain *subdomain, int bc, int time_steps);
 
 /**
  * @brief compute a single temporal iteration of forward-time central-space (FTCS) finite difference 
@@ -27,7 +27,7 @@ void ComputeFD(Subdomain subdomain, int bc, int time_steps);
  * @param subdomain the subdomain on which to compute finite differences
  * @param bc boundary conditions (Dirichlet or VonNeumann)
  */
-void FTCS(Subdomain subdomain, int bc);
+void FTCS(Subdomain *subdomain, int bc);
 
 /**
  * @brief compute interior points. same for both dirichlet and von neumann
@@ -36,7 +36,7 @@ void FTCS(Subdomain subdomain, int bc);
  * @param j y index
  * @param z index (zero if 2D)
  */
-void InteriorFD(Subdomain subdomain, int i, int j, int k);
+void InteriorFD(Subdomain *subdomain, int i, int j, int k);
 
 /**
  * @brief compute boundary terms depending on whether dirichlet or von neuman is being used
@@ -45,7 +45,7 @@ void InteriorFD(Subdomain subdomain, int i, int j, int k);
  * @param j y index
  * @param z index (zero if 2D)
  */
-void BoundaryFD(Subdomain subdomain, int bc, int i, int j, int k);
+void BoundaryFD(Subdomain *subdomain, int bc, int i, int j, int k);
 
 /**
  * @brief create a shape array.  in the case of irregular geometry, this corresponds to which locations
@@ -54,44 +54,38 @@ void BoundaryFD(Subdomain subdomain, int bc, int i, int j, int k);
  * @param subdomain subdomain to create shape array in
  * @param radius radius of domain of interest
  */
-void CreateShapeArray(Subdomain subdomain, float radius);
+void CreateShapeArray(Subdomain *subdomain, float radius);
 
 /**
  * @brief apply a laplace filter (discrete laplace operator) to detect the boundary of the area
  * of interest (i.e. where FDM computation occurs)
  * @param subdomain subdomain to apply filter on
  */
-void ApplyLaplaceFilter(Subdomain subdomain);
+void ApplyLaplaceFilter(Subdomain *subdomain);
 
 /**
  * @brief apply boundary conditions to the domain
  * @param subdomain the subdomain in which to set boundary conditions
  */
-void SetBoundaryConditions(Subdomain subdomain);
+void SetBoundaryConditions(Subdomain *subdomain);
 
 /**
  * @brief apply initial conditions to the domain
  * @param subdomain the subdomain in which to set initial conditions
  */
-void SetInitialConditions(Subdomain subdomain);
+void SetInitialConditions(Subdomain *subdomain);
 
 /**
  * @brief discretize the process's domain (a subdomain)
  * @param subdomain the subdomain to discretize
  */
-void DiscretizeSubdomain(Subdomain subdomain);
+void DiscretizeSubdomain(Subdomain *subdomain);
 
 /**
  * @brief determine the step sizes along each dimension from global size and the
  * number of finite difference grid_g cells
  * @param sd 
  */
-void DetermineStepSizes(Subdomain sd);
-
-/**
- * @brief allocate memory for FDM arrays
- * @param subdomain the subdomain to generate arrays for
- */
-void AllocateArraysFDM(Subdomain *subdomain);
+void DetermineStepSizes(Subdomain *sd);
 
 #endif // FDM_INCL

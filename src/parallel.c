@@ -3,17 +3,48 @@
 #include <mpi.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-void PrepareSubdomains(Subdomain *subdomain)
-{
+Subdomain *CreateSubdomain(int nproc, int rank)
+{   
+    Subdomain *subdomain = malloc(sizeof(Subdomain));
+    GetInput(subdomain, nproc, rank);
+    fprintf(stdout, "sd->rank = %d\n", subdomain->rank);
+    fprintf(stdout, "sd->n_dims = %d\n", subdomain->n_dims);
     SplitProcessorsAlongDims(subdomain);
+    fprintf(stdout, "sd->n_proc_dim[0] = %d\n", subdomain->n_proc_dim[0]);
+    fprintf(stdout, "sd->n_proc_dim[1] = %d\n", subdomain->n_proc_dim[1]);
+    fprintf(stdout, "sd->n_proc_dim[2] = %d\n", subdomain->n_proc_dim[2]);
     GetSubdomainGridBounds(subdomain);
     ComputeSubdomainGrid(subdomain);
-} // end void PrepareSubdomains(Subdomain subdomain)
+    AllocateArraysFDM(subdomain);
+
+    return subdomain;
+}
+
+void GetInput(Subdomain *sd, int n_proc, int rank)
+{
+    sd->n_proc = n_proc;
+    sd->rank = rank,
+    sd->n_dims = 2;
+    sd->dims_g[0] = 20;
+    sd->dims_g[1] = 20;
+    sd->dims_g[2] = 0;
+
+    sd->n_proc_dim[0] = 0;
+    sd->n_proc_dim[1] = 0;
+    sd->n_proc_dim[2] = 0;
+
+    sd->grid_g[0] = 200;
+    sd->grid_g[1] = 200;
+    sd->grid_g[2] = 1;
+    sd->dt = 0.05; // 50 milliseconds
+}
 
 void SplitProcessorsAlongDims(Subdomain *sd)
 {
-    MPI_Dims_create((*sd).n_proc, (*sd).n_dims, (*sd).n_proc_dim);
+    MPI_Dims_create(sd->n_proc, sd->n_dims, sd->n_proc_dim);
 } // end void SplitProcessorsAlongDims(Subdomain sd)
 
 void GetSubdomainGridBounds(Subdomain *sd)
@@ -35,12 +66,9 @@ void GetSubdomainGridBounds(Subdomain *sd)
             (*sd).bounds_l[2 * n + 1] = (*sd).bounds_l[2 * n] + ((*sd).grid_g[n] / (*sd).n_proc_dim[n]);
         }
 
-        fprintf(stdout, "rank %d: global grid along dim %d is %d\n", (*sd).rank, n, (*sd).grid_g[n]);
-        fprintf(stdout, "rank %d: n_proc_dim[%d] is %d\n", (*sd).rank, n, (*sd).n_proc_dim[n]);
-        fprintf(stdout, "rank %d: lower grid id along dim %d is %d, upper is %d\n", (*sd).rank, n, (*sd).bounds_l[2 * n], (*sd).bounds_l[2 * n + 1]);
         // this zeros out the z slots in case the problem is only 2D.  if the problem is 3D
         // then these will be given the correct value on the next iteration of the for loop
-        if (n == 2)
+        if (n == 1)
         {
             (*sd).bounds_l[2 * n + 2] = 0;
             (*sd).bounds_l[2 * n + 3] = 0;
@@ -55,7 +83,6 @@ void ComputeSubdomainGrid(Subdomain *sd)
     {
 
         (*sd).grid_l[n] = (*sd).bounds_l[2 * n + 1] - (*sd).bounds_l[2 * n];
-        fprintf(stdout, "rank %d: grid_l[%d] is %d\n", (*sd).rank, n, (*sd).bounds_l[2 * n + 1] - (*sd).bounds_l[2 * n]);
 
         // this zeros out the z slot in case the problem is only 2D.  if the problem is 3D
         // then this will be given the correct value on the next iteration of the for loop
@@ -66,32 +93,46 @@ void ComputeSubdomainGrid(Subdomain *sd)
     }
 } // end void ComputeSubdomainDims(Subdomain sd)
 
+void AllocateArraysFDM(Subdomain *sd)
+{
+    // note:
+    // sd.grid_g[2] = sd.grid_l[2] = 1 for 2D case, so multiplying it here doesn't matter 
+    // if the problem is 2D
+
+    // shape arrays
+    (*sd).shape_arr_l = (int*)malloc((*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2] * sizeof(int));
+    (*sd).shape_arr_g = (int*)malloc((*sd).grid_g[0] * (*sd).grid_g[1] * (*sd).grid_g[2] * sizeof(int));
+    memset((*sd).shape_arr_l, 0, (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2] * sizeof(int));
+    memset((*sd).shape_arr_g, 0, (*sd).grid_g[0] * (*sd).grid_g[1] * (*sd).grid_g[2] * sizeof(int));
+
+    // local solution arrays
+    (*sd).u_next = (float*)malloc((*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2] * sizeof(float));
+    (*sd).u_now = (float*)malloc((*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2] * sizeof(float));
+    memset((*sd).u_next, 0, (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2] * sizeof(((*sd).u_next)));
+    memset((*sd).u_now, 0, (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2] * sizeof(((*sd).u_now)));
+
+    // global solution array
+    (*sd).u_global = (float*)malloc((*sd).grid_g[0] * (*sd).grid_g[1] * (*sd).grid_g[2] * sizeof(float));
+    memset((*sd).u_global, 0, (*sd).grid_g[0] * (*sd).grid_g[1] * (*sd).grid_g[2] * sizeof(float));
+} // end void AllocateArraysFDM(Subdomain sd)
+
 void CoordShift(Subdomain *sd, float r)
 {
-
-    //fprintf(stdout, "lower grid id along dim 0 is %d, upper is %d\n", sd.bounds_l[0], sd.bounds_l[1]);
-    //fprintf(stdout, "lower grid id along dim 1 is %d, upper is %d\n", sd.bounds_l[2], sd.bounds_l[3]);
     float r_shifted; // squared length of shifted position vector of a fdm grid_g cell
-    for (int i = (*sd).bounds_l[0]; i < (*sd).bounds_l[1]-1; i ++)
+    for (int i = (*sd).bounds_l[0]; i < (*sd).bounds_l[1]; i ++)
     {
-        for (int j = (*sd).bounds_l[2]; j < (*sd).bounds_l[3]-1; j++)
+        for (int j = (*sd).bounds_l[2]; j < (*sd).bounds_l[3]; j++)
         {
             if ((*sd).n_dims == 2) // 2D problem
             {
                 r_shifted = pow(i - ((*sd).grid_g[0] / 2), 2.0) + pow(j - ((*sd).grid_g[1] / 2), 2.0);
                 if ((int)r_shifted <= (int)r*r) // inside of circle
                 {
-                    fprintf(stdout, "rank %d: index is %d\n", (*sd).rank, (i - (*sd).bounds_l[0]) * (*sd).grid_l[1] + j - (*sd).bounds_l[2]);
-                    fprintf(stdout, "rank %d:max index is %d\n", (*sd).rank, (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2]);
                     (*sd).shape_arr_l[(i - (*sd).bounds_l[0]) * (*sd).grid_l[1] + j - (*sd).bounds_l[2]] = 1;
-                    //fprintf(stdout, "updated shape array\n");
                 }
                 else // outside of circle
                 {
-                    fprintf(stdout, "rank %d: index is %d\n", (*sd).rank, (i - (*sd).bounds_l[0]) * (*sd).grid_l[1] + j - (*sd).bounds_l[2]);
-                    fprintf(stdout, "rank %d:max index is %d\n", (*sd).rank, (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2]);
                     (*sd).shape_arr_l[(i - (*sd).bounds_l[0]) * (*sd).grid_l[1] + j - (*sd).bounds_l[2]] = 0;
-                    //fprintf(stdout, "didn't update shape array\n");
                 }
             }
             else // 3D problem
