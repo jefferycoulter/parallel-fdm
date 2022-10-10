@@ -3,6 +3,7 @@
 .vscode/
 build/
 data/
+tests/bin
 
 # cmake files
 CMakeLists.txt.user
