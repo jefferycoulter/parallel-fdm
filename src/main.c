@@ -8,6 +8,7 @@
 int main(int argc, char** argv)
 {
     int n_proc, rank;
+    MPI_Status status;
     int time_steps = 1000; // max time steps to iterate
     float radius;
 
@@ -22,13 +23,13 @@ int main(int argc, char** argv)
 
     // setup for finite difference computations
     DetermineStepSizes(subdomain);
-    AllocateArraysFDM(subdomain);
     CreateShapeArray(subdomain, radius);
 
     SetBoundaryConditions(subdomain);
     SetInitialConditions(subdomain);
 
     ComputeFD(subdomain, Dirichlet, time_steps);
+
    
     MPI_Finalize();
     

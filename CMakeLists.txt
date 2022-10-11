@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.16)
 
 project(main)
 
+add_compile_options(-g -O2 -Wall -Wextra)
+
 find_package(MPI REQUIRED)
 if(MPI_C_FOUND)
     message(STATUS "Found MPI")

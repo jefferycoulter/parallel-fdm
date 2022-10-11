@@ -7,17 +7,17 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 dt = 0.05
-data = np.genfromtxt("data/data.csv", dtype=float, delimiter=",")
+data = np.genfromtxt("../data/data.csv", dtype=float, delimiter=",")
 
 data = np.delete(data, -1, 1)
 data = data.reshape(1001, 40, 40)
         
 
 fig, ax = plt.subplots()
-shape = np.genfromtxt("data/shape.csv", dtype=float, delimiter=",")
+shape = np.genfromtxt("../data/shape.csv", dtype=float, delimiter=",")
 shape = np.delete(shape, -1, 0)
 shape = shape.reshape(200,200)
-ax.imshow(shape)
+ax.imshow(shape, origin="lower", cmap="binary")
 
 
 # =============================================================================
