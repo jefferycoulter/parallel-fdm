@@ -8,28 +8,31 @@
 int main(int argc, char** argv)
 {
     int n_proc, rank;
-    MPI_Status status;
     int time_steps = 1000; // max time steps to iterate
-    float radius;
+    float radius = 40.0;
 
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &n_proc);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     // initialize the subdomain struct on each process
-    Subdomain *subdomain = CreateSubdomain(n_proc, rank);
-
-    // perform further initializations and allocations
+    Subdomain *sd = CreateSubdomain(n_proc, rank);
 
     // setup for finite difference computations
-    DetermineStepSizes(subdomain);
-    CreateShapeArray(subdomain, radius);
+    DetermineStepSizes(sd);
+    CreateShapeArray(sd, radius);
+    
+    SetBoundaryConditions(sd);
+    SetInitialConditions(sd);
 
-    SetBoundaryConditions(subdomain);
-    SetInitialConditions(subdomain);
+    //MPI_Gather(sd->u_now, sd->grid_l[0] * sd->grid_l[1] * sd->grid_l[2], MPI_FLOAT, 
+      //             sd->u_global, sd->grid_l[0] * sd->grid_l[1] * sd->grid_l[2], MPI_FLOAT,
+        //           ROOT, MPI_COMM_WORLD);
+    //WriteData((*sd), FDM);
 
-    ComputeFD(subdomain, Dirichlet, time_steps);
+    ComputeFD(sd, Dirichlet, time_steps);
 
+    SubdomainCleanUp(sd);
    
     MPI_Finalize();
     

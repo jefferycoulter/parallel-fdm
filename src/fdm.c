@@ -14,7 +14,7 @@ void ComputeFD(Subdomain *sd, int bc, int time_steps)
     WriteData(*sd, FDM); // save initial conditions
     for (int t = 1; t < time_steps+1; t ++)
     {
-        FTCS(sd, bc); // compute difference
+        FTCS(sd, bc); // compute finite differences
 
         // send the local computations to ROOT process
         MPI_Gather(sd->u_next, sd->grid_l[0] * sd->grid_l[1] * sd->grid_l[2], MPI_FLOAT, 
@@ -25,13 +25,6 @@ void ComputeFD(Subdomain *sd, int bc, int time_steps)
             WriteData(*sd, FDM); // save each iteration
         }
     }
-
-    // free memory once finished
-    free((*sd).shape_now);
-    free((*sd).shape_g);
-    free((*sd).u_global);
-    free((*sd).u_now);
-    free((*sd).u_next);
 } // end void ComputeFD(Subdomain sd, int bc, int time_steps)
 
 void FTCS(Subdomain *sd, int bc)
@@ -41,8 +34,8 @@ void FTCS(Subdomain *sd, int bc)
         for (int j = 0; j < sd->grid_l[1]; j++)
         {
             if (sd->n_dims == 2) // 2D problem
-            {
-                switch (sd->shape_now[i * sd->grid_l[1] + j])
+            {   
+                switch (sd->shape_next[i * sd->grid_l[1] + j])
                 {
                 case OUTSIDE:
                     break;
@@ -58,7 +51,7 @@ void FTCS(Subdomain *sd, int bc)
             {
                 for (int k = 0; k < sd->grid_l[2]; k++)
                 {
-                    switch (sd->shape_now[(i * sd->grid_l[1] + j) * sd->grid_l[2] + k])
+                    switch (sd->shape_next[(i * sd->grid_l[1] + j) * sd->grid_l[2] + k])
                     {
                     case OUTSIDE:
                         break;
@@ -255,49 +248,33 @@ void ApplyLaplaceFilter(Subdomain *sd)
 void SetBoundaryConditions(Subdomain *sd)
 {
     int bc = 10.0;
-    if (sd->grid_l[2] == 0) // 2D problem
+
+    for (int i = 0; i < sd->grid_l[0]; i++)
     {
-        for (int i = 0; i < sd->grid_l[0]; i++)
+        for (int j = 0; j < sd->grid_l[1]; j++)
         {
-            sd->u_now[i * sd->grid_l[1]] = bc; // left side
-            sd->u_next[i * sd->grid_l[1]] = bc;
-            if (i == 0) // fill in top
+            if (sd->n_dims == 2)
             {
-                for (int j = 1; j < sd->grid_l[1]; j++)
+                switch (sd->shape_next[i * sd->grid_l[1] + j])
                 {
+                case BOUNDARY:
                     sd->u_now[i * sd->grid_l[1] + j] = bc;
-                    sd->u_next[i * sd->grid_l[1] + j] = bc;
+                    break;
+                default:
+                    break;
                 }
             }
-            else if (i == sd->grid_l[0] - 1) // fill in bottom
-            {
-                for (int j = 1; j < sd->grid_l[1]; j++)
-                {
-                    sd->u_now[i * sd->grid_l[1] + j] = bc;
-                    sd->u_next[i * sd->grid_l[1] + j] = bc;
-                }
-            }
-            else // fill in the rest of the terms on the right side
-            {
-                sd->u_now[i*sd->grid_g[1] + sd->grid_g[1] - 1] = bc;
-                sd->u_next[i*sd->grid_g[1] + sd->grid_g[1] - 1] = bc;
-            }
-        }
-    }
-    else // 3D problem
-    { // this code doesn't work, switch to shape array
-        for (int i = 0; i < sd->grid_l[0]; i++)
-        {
-            for (int j = 0; j < sd->grid_l[1]; j++)
+            else if (sd->n_dims == 3)
             {
                 for (int k = 0; k < sd->grid_l[2]; k++)
                 {
-                    if (i == 0 || i == sd->grid_l[0] || j == 0 || j == sd->grid_l[1] || k == 0 || k == sd->grid_l[2])
-                    {
-                        sd->u_now[(i * sd->grid_l[1] + j) * sd->grid_l[2] + k] = 10;
-                        sd->u_next[(i * sd->grid_l[1] + j) * sd->grid_l[2] + k] = 10;
-                    }
+
                 }
+            }
+            else
+            {
+                fprintf(stderr, "Invalid number of dimensions: %d.  Need to choose either 2D or 3D.\n", sd->n_dims);
+                exit(1);
             }
         }
     }
@@ -306,21 +283,34 @@ void SetBoundaryConditions(Subdomain *sd)
 
 void SetInitialConditions(Subdomain *sd)
 {
-    int ic = 0.0;
-    for (int i = 1; i < sd->grid_l[0] - 1; i++)
+    int ic = -10.0;
+
+    for (int i = 0; i < sd->grid_l[0]; i++)
     {
-        for (int j = 1; j < sd->grid_l[1] - 1; j++)
+        for (int j = 0; j < sd->grid_l[1]; j++)
         {
-            if (sd->grid_l[2] == 0) // 2D problem
+            if (sd->n_dims == 2)
             {
-                sd->u_now[i * sd->grid_l[1] + j] = ic;
-            }
-            else // 3D problem
-            {
-                for (int k = 1; k < sd->grid_l[2] - 1; k++)
+                switch (sd->shape_next[i * sd->grid_l[1] + j])
                 {
-                    sd->u_now[(i * sd->grid_l[1] + j) * sd->grid_l[2] + k] = ic;
+                case INSIDE:
+                    sd->u_now[i * sd->grid_l[1] + j] = ic;
+                    break;
+                default:
+                    break;
                 }
+            }
+            else if (sd->n_dims == 3)
+            {
+                for (int k = 0; k < sd->grid_l[2]; k++)
+                {
+
+                }
+            }
+            else
+            {
+                fprintf(stderr, "Invalid number of dimensions: %d.  Need to choose either 2D or 3D.\n", sd->n_dims);
+                exit(1);
             }
         }
     }
@@ -345,20 +335,23 @@ void DiscretizeSubdomain(Subdomain *sd)
 void DetermineStepSizes(Subdomain *sd)
 {
     // step sizes
-    sd->dx = sd->dims_g[0] / sd->grid_g[0];
-    sd->dy = sd->dims_g[1] / sd->grid_g[1];
-    sd->dz = sd->dims_g[2] / sd->grid_g[2];
+    sd->dx = (float)sd->dims_g[0] / (float)sd->grid_g[0];
+    sd->dy = (float)sd->dims_g[1] / (float)sd->grid_g[1];
+    if(sd->n_dims == 3)
+    {
+        sd->dz = (float)sd->dims_g[2] / (float)sd->grid_g[2];
+        sd->mu_z = sd->dt / pow(sd->dz, 2.0);
+        if (sd->mu_z > 0.5) { fprintf(stderr, "Step sizes are too large. dz = %f, mu_z = %f > 0.5\n", sd->dx, sd->mu_z); exit(1); }
+    }
 
     // stability factors
     sd->mu_x = sd->dt / pow(sd->dx, 2.0);
     sd->mu_y = sd->dt / pow(sd->dy, 2.0);
-    sd->mu_z = sd->dt / pow(sd->dz, 2.0);
+
 
     // make sure step sizes are appropriate for stable results
-    if (sd->mu_x > 0.5) { fprintf(stderr, "Step sizes are too large. mu_x = %f > 0.5\n", sd->mu_x); }
-    if (sd->mu_y > 0.5) { fprintf(stderr, "Step sizes are too large. mu_y = %f > 0.5\n", sd->mu_y); }
-    if (sd->mu_z > 0.5) { fprintf(stderr, "Step sizes are too large. mu_z = %f > 0.5\n", sd->mu_z); }
-    exit(1);
+    if (sd->mu_x > 0.5) { fprintf(stderr, "Step sizes are too large. dx = %f, mu_x = %f > 0.5\n", sd->dx, sd->mu_x); exit(1); }
+    if (sd->mu_y > 0.5) { fprintf(stderr, "Step sizes are too large. dy = %f, mu_y = %f > 0.5\n", sd->dx, sd->mu_y); exit(1); }
 } // end void DetermineStepSizes(Subdomain sd)
 
 

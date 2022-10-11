@@ -7,7 +7,7 @@
 
 int main(int argc, char **argv)
 {
-    int n_proc, rank, offset, tag = 0;
+    int n_proc, rank;
     MPI_Status status;
     int time_steps = 1000; // max time steps to iterate
     float radius = 40.0;

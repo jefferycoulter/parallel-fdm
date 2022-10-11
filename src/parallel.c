@@ -198,6 +198,10 @@ void CollectSubdomainData(Subdomain *sd)
     MPI_Gather((*sd).shape_next, (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_INT, 
                (*sd).shape_g, (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_INT,
                ROOT, MPI_COMM_WORLD);
+               
+    MPI_Gather((*sd).shape_next, (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_INT, 
+               (*sd).shape_g, (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_INT,
+               ROOT, MPI_COMM_WORLD);
 } // end void CollectSubdomainData(Subdomain *subdomain)
 
 void SetupCollectSubdomainData(Subdomain *sd)
