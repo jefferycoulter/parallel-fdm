@@ -3,16 +3,22 @@
 
 
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 dt = 0.05
-data = np.genfromtxt("../data/data.csv", dtype=float, delimiter=",")
-
+# data = np.genfromtxt("../data/data.csv", dtype=float, delimiter=",")
+print("loading data")
+data = pd.read_csv("../data/data.csv", dtype=float, delimiter=",")
+print("converting to numpy array")
+data = data.to_numpy()
+print("deleting column")
 data = np.delete(data, -1, 1)
-data = data.reshape(1001, 200, 200)
+print("reshaping array")
+data = data.reshape(5000, 200, 200)
         
-fig, ax = plt.subplots()
+#fig, ax = plt.subplots()
 # =============================================================================
 
 # shape = np.genfromtxt("../data/shape.csv", dtype=float, delimiter=",")
@@ -39,11 +45,14 @@ fig, ax = plt.subplots()
 
 
 fig_a, ax_a = plt.subplots()
+cbar_ax = fig_a.add_axes([0.80, 0.15, 0.05, 0.70])
 ims = []
+print("creating plots")
 for i in range(len(data)):
-    im = ax_a.imshow(data[i][:][:], origin="lower", animated=True)
+    im = ax_a.imshow(data[i][:][:], origin="lower", cmap="hot", animated=True)
+    fig_a.colorbar(im, cbar_ax)
     if i == 0:
-        im = ax_a.imshow(data[i][:][:])  # show an initial one first
+        im = ax_a.imshow(data[i][:][:], origin="lower", cmap="hot", animated=True)
     ims.append([im])
 
 ani = animation.ArtistAnimation(fig_a, ims, interval=5, blit=True, repeat_delay=1000)

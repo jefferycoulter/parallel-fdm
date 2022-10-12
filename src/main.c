@@ -8,8 +8,8 @@
 int main(int argc, char** argv)
 {
     int n_proc, rank;
-    int time_steps = 1000; // max time steps to iterate
-    float radius = 40.0;
+    int time_steps = 5000; // max time steps to iterate
+    float radius = 50.0;
 
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &n_proc);
@@ -20,6 +20,9 @@ int main(int argc, char** argv)
 
     // setup for finite difference computations
     DetermineStepSizes(sd);
+    fprintf(stdout, "mu_x = %f\n", sd->mu_x);
+    fprintf(stdout, "mu_y = %f\n", sd->mu_y);
+    fprintf(stdout, "mu_z = %f\n", sd->mu_z);
     CreateShapeArray(sd, radius);
     
     SetBoundaryConditions(sd);

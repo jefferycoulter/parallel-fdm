@@ -23,8 +23,8 @@ void GetInput(Subdomain *sd, int n_proc, int rank)
     sd->n_proc = n_proc;
     sd->rank = rank;
     sd->n_dims = 2;
-    sd->dims_g[0] = 20;
-    sd->dims_g[1] = 20;
+    sd->dims_g[0] = 40;
+    sd->dims_g[1] = 40;
     sd->dims_g[2] = 0;
 
     // have to initialize this to something, otherwise mpi throws memory access errors

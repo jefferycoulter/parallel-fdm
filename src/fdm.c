@@ -11,6 +11,9 @@ enum Mode{FD, Laplace};
 
 void ComputeFD(Subdomain *sd, int bc, int time_steps)
 {
+    MPI_Gather(sd->u_now, sd->grid_l[0] * sd->grid_l[1] * sd->grid_l[2], MPI_FLOAT, 
+                   sd->u_global, sd->grid_l[0] * sd->grid_l[1] * sd->grid_l[2], MPI_FLOAT,
+                   ROOT, MPI_COMM_WORLD);
     WriteData(*sd, FDM); // save initial conditions
     for (int t = 1; t < time_steps+1; t ++)
     {
@@ -102,6 +105,7 @@ void BoundaryFD(Subdomain *sd, int bc, int i, int j, int k)
     {
         case Dirichlet:
         {
+            //SetBoundaryConditions(sd);
             // don't need to do anything assuming boundaries are constant
             break;
         } // end case Dirichlet
@@ -198,12 +202,12 @@ void ApplyLaplaceFilter(Subdomain *sd)
                             case INSIDE: // if previous value was INSIDE, then switch it back to inside
                                 sd->shape_next[i * sd->grid_l[1] + j] = INSIDE;
                                 break;
-                        }
+                        } // end switch
                         break;
                     default: // if the new value is not zero, then it is a boundary
                         sd->shape_next[i * sd->grid_l[1] + j] = BOUNDARY;
                         break;
-                }
+                } // end switch
             }
             else if (sd->n_dims == 3)
             {
@@ -257,11 +261,11 @@ void SetBoundaryConditions(Subdomain *sd)
             {
                 switch (sd->shape_next[i * sd->grid_l[1] + j])
                 {
-                case BOUNDARY:
-                    sd->u_now[i * sd->grid_l[1] + j] = bc;
-                    break;
-                default:
-                    break;
+                    case BOUNDARY:
+                        sd->u_now[i * sd->grid_l[1] + j] = bc;
+                        break;
+                    default:
+                        break;
                 }
             }
             else if (sd->n_dims == 3)
@@ -293,11 +297,11 @@ void SetInitialConditions(Subdomain *sd)
             {
                 switch (sd->shape_next[i * sd->grid_l[1] + j])
                 {
-                case INSIDE:
-                    sd->u_now[i * sd->grid_l[1] + j] = ic;
-                    break;
-                default:
-                    break;
+                    case INSIDE:
+                        sd->u_now[i * sd->grid_l[1] + j] = ic;
+                        break;
+                    default:
+                        break;
                 }
             }
             else if (sd->n_dims == 3)
