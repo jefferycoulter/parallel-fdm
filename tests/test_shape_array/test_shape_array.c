@@ -19,7 +19,6 @@ int main(int argc, char **argv)
     //initialize the subdomain on each process
     Subdomain *sd = CreateSubdomain(n_proc, rank);
 
-    //CoordShift(sd, radius);
     CreateShapeArray(sd, radius);
 
     CollectSubdomainData(sd);

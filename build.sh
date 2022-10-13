@@ -5,6 +5,7 @@ DIR="$( cd "$( dirname "$0" )" && pwd )"
 cmake -S $DIR -B $DIR/build \
     -G "Unix Makefiles" \
     -DCMAKE_C_COMPILER="/usr/bin/clang" \
+    -DBUILD_TESTS=1 \
     -DCMAKE_BUILD_TYPE=Debug
 
 if [[ -z "$MAKEFLAGS" ]]

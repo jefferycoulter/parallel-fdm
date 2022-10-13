@@ -25,6 +25,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${MPI_C_INCLUDE_DIRS} inc)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC ${MPI_C_LIBRARIES})
 
-add_subdirectory(tests)
+if(BUILD_TESTS)
+    add_subdirectory(tests)
+endif(BUILD_TESTS)
 
 

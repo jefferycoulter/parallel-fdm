@@ -6,12 +6,18 @@
 #define ROOT 0 // root process
 
 /**
+ * @brief enumeration for finding neighbor processors
+ */
+enum Neighbors{Front, Back, Left, Right, Up, Down};
+
+/**
  * @brief struct containing items related to subdomain construction and usage
  */
 typedef struct
 {
     int n_proc; // total number of processors
-    int n_proc_dim[3]; // number of processors along each dimension
+    int n_proc_dim2D[2];
+    int n_proc_dim3D[3]; // number of processors along each dimension
     int rank; // rank of process that owns the subdomain in MPI_COMM_WORLD
     MPI_Datatype subdomain_type;
     int coords[3];
@@ -30,9 +36,9 @@ typedef struct
     float dt; // temporal step size
     float mu_x, mu_y, mu_z; // stability factor, mu_i = dt / di**2 where i = x, y, z
 
-    int *shape_now; // shape array local to a process. used for determining fdm boundaries in case of irregular geometry
+    int (*shape_now); // shape array local to a process. used for determining fdm boundaries in case of irregular geometry
     int *shape_next;
-    int *shape_g; // global shape array 
+    int *shape_g; // global shape array -- this might not be necessary. just used for debugging i think
     float *u_now; // current result, used to compute next fdm iteration
     float *u_next; // stores data after fdm iteration
     float *u_global; // global solution array
@@ -75,13 +81,13 @@ void AllocateArraysFDM(Subdomain *subdomain);
 
 void CreateSubdomainType(Subdomain *subdomain);
 
-void CreateSubdomainType2(Subdomain *sd);
+void CreateSubdomainType2(Subdomain *subdomain);
 
 void SetupCollectSubdomainData(Subdomain *subdomain);
 
 void CollectSubdomainData(Subdomain *subdomain);
 
-void SubdomainCleanUp(Subdomain *sd);
+void SubdomainCleanUp(Subdomain *subdomain);
 
 /**
  * @brief shift the coordinates in a given subdomain so that the center of the global subdomain (dim_X / 2, dim_y / 2) 
