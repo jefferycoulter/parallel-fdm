@@ -21,7 +21,7 @@ int main(int argc, char **argv)
 
     CoordShift(sd, radius);
     //CreateShapeArray(sd, radius);
-
+    
     /*
     fprintf(stdout, "rank %d: sd->coords[0] = %d\n", sd->rank, sd->coords[0]);
     fprintf(stdout, "rank %d: sd->coords[1] = %d\n", sd->rank, sd->coords[1]);

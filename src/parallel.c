@@ -19,21 +19,21 @@ Subdomain *CreateSubdomain(int nproc, int rank)
 } // end Subdomain *CreateSubdomain(int nproc, int rank)
 
 void GetInput(Subdomain *sd, int n_proc, int rank)
-{
+{   
     sd->n_proc = n_proc;
     sd->rank = rank;
-    sd->n_dims = 2;
+    sd->n_dims = 3;
     sd->dims_g[0] = 40;
     sd->dims_g[1] = 40;
-    sd->dims_g[2] = 0;
+    sd->dims_g[2] = 40;
 
     // have to initialize this to something, otherwise mpi throws memory access errors
     sd->n_proc_dim2D[0] = sd->n_proc_dim2D[1] = 0;
     sd->n_proc_dim3D[0] = sd->n_proc_dim3D[1] = sd->n_proc_dim3D[2] = 0;
 
-    sd->grid_g[0] = 800;
-    sd->grid_g[1] = 800;
-    sd->grid_g[2] = 1;
+    sd->grid_g[0] = 100;
+    sd->grid_g[1] = 100;
+    sd->grid_g[2] = 100;
     sd->dt = 0.005; // 50 milliseconds
 } // end void GetInput(Subdomain *sd, int n_proc, int rank)
 
@@ -157,7 +157,7 @@ void CreateSubdomainType(Subdomain *sd)
     {
         int starts[3] = {0, 0, 0};
         MPI_Type_create_subarray(sd->n_dims, sd->grid_g, sd->grid_l, starts, MPI_ORDER_C, MPI_INT, &subdomain);
-        MPI_Type_create_resized(subdomain, 0, sd->grid_l[0] * sizeof(int), &(*sd).subdomain_type);
+        MPI_Type_create_resized(subdomain, 0, sd->grid_l[1] * sd->grid_l[2] * sizeof(int), &(*sd).subdomain_type);
         MPI_Type_commit(&(*sd).subdomain_type);
     }
     else
@@ -248,9 +248,9 @@ void SetupCollectSubdomainData(Subdomain *sd)
                     sd->displs[(i * sd->n_proc_dim3D[1] + j) * sd->n_proc_dim3D[2] + k] = disp;
                     disp += 1;
                 }
-                disp += (sd->grid_l[1] - 1) * sd->n_proc_dim3D[1];
+                disp += (sd->grid_l[0] - 1) * sd->n_proc_dim3D[1];
             }
-            disp += (sd->grid_l[1] - 1) * sd->n_proc_dim3D[1];
+            disp += (((*sd).grid_l[0] - 1) * ((*sd).n_proc_dim3D[1]) - 1) * sd->n_proc_dim3D[2];
         }
     }
     else
@@ -263,119 +263,28 @@ void SetupCollectSubdomainData(Subdomain *sd)
 void AllocateArraysFDM(Subdomain *sd)
 {
     // size of memory to allocate
-    int local_size, global_size;
+    unsigned long long local_size = MAX_GRID_LOCAL * MAX_GRID_LOCAL * MAX_GRID_LOCAL;
+    unsigned long long global_size = MAX_GRID_GLOBAL * MAX_GRID_GLOBAL * MAX_GRID_GLOBAL;
 
-    if (sd->n_dims == 2)
-    {
-        if (sd->n_proc == 1) // sequential, so don't need to add space for ghost cells
-        {
-            local_size = ((*sd).grid_l[0]) * ((*sd).grid_l[1]);
-            global_size = ((*sd).grid_g[0]) * ((*sd).grid_g[1]);
+    // local shape arrays
+    (*sd).shape_now =  malloc( sizeof(int[MAX_GRID_LOCAL][MAX_GRID_LOCAL][MAX_GRID_LOCAL]) );
+    (*sd).shape_next = malloc( sizeof(int[MAX_GRID_LOCAL][MAX_GRID_LOCAL][MAX_GRID_LOCAL]) );
+    memset((*sd).shape_now,  0, sizeof(int) * local_size);
+    memset((*sd).shape_next, 0, sizeof(int) * local_size);
+    
+    // local solution arrays
+    (*sd).u_now =  malloc( sizeof(int[MAX_GRID_LOCAL][MAX_GRID_LOCAL][MAX_GRID_LOCAL]) );
+    (*sd).u_next = malloc( sizeof(int[MAX_GRID_LOCAL][MAX_GRID_LOCAL][MAX_GRID_LOCAL]) );
+    memset((*sd).u_now,  0, sizeof(float) * local_size);
+    memset((*sd).u_next, 0, sizeof(float) * local_size);
 
-            // local shape arrays
-            (*sd).shape_now = (int*)malloc(sizeof(int) * local_size);
-            (*sd).shape_next = (int*)malloc(sizeof(int) * local_size);
-            memset((*sd).shape_now, 0, sizeof(int) * local_size);
-            memset((*sd).shape_next, 0, sizeof(int) * local_size);
-            
-            // global shape array
-            (*sd).shape_g = (int*)malloc(sizeof(int) * global_size);
-            memset((*sd).shape_g, 0, sizeof(int) * global_size);
+    // global shape array
+    (*sd).shape_g = malloc( sizeof(int[MAX_GRID_GLOBAL][MAX_GRID_GLOBAL][MAX_GRID_GLOBAL]) );
+    memset((*sd).shape_g, 0, sizeof(int) * global_size);
 
-            // local solution arrays
-            (*sd).u_next = (float*)malloc(sizeof(float) * local_size);
-            (*sd).u_now = (float*)malloc(sizeof(float) * local_size);
-            memset((*sd).u_next, 0, sizeof(float) * local_size);
-            memset((*sd).u_now, 0, sizeof(float) * local_size);
-
-            // global solution array
-            (*sd).u_global = (float*)malloc(sizeof(float) * global_size);
-            memset((*sd).u_global, 0, sizeof(float) * global_size);
-        }
-        else // parallel, so need to add space for ghost cells
-        {
-            local_size = ((*sd).grid_l[0] + 2) * ((*sd).grid_l[1] + 2);
-            global_size = ((*sd).grid_g[0]) * ((*sd).grid_g[1]);
-
-            // local shape arrays
-            (*sd).shape_now = (int*)malloc(sizeof(int) * local_size);
-            (*sd).shape_next = (int*)malloc(sizeof(int) * local_size);
-            memset((*sd).shape_now, 0, sizeof(int) * local_size);
-            memset((*sd).shape_next, 0, sizeof(int) * local_size);
-            
-            // global shape array
-            (*sd).shape_g = (int*)malloc(sizeof(int) * global_size);
-            memset((*sd).shape_g, 0, sizeof(int) * global_size);
-
-            // local solution arrays
-            (*sd).u_next = (float*)malloc(sizeof(float) * local_size);
-            (*sd).u_now = (float*)malloc(sizeof(float) * local_size);
-            memset((*sd).u_next, 0, sizeof(float) * local_size);
-            memset((*sd).u_now, 0, sizeof(float) * local_size);
-
-            // global solution array
-            (*sd).u_global = (float*)malloc(sizeof(float) * global_size);
-            memset((*sd).u_global, 0, sizeof(float) * global_size);
-        } // end if-else for n_proc
-    }
-    else if (sd->n_dims == 3)
-    {
-        if (sd->n_proc == 1)
-        {
-            local_size = ((*sd).grid_l[0]) * ((*sd).grid_l[1]) * ((*sd).grid_l[2]);
-            global_size = ((*sd).grid_g[0]) * ((*sd).grid_g[1]) * ((*sd).grid_g[2]);
-
-            // local shape arrays
-            (*sd).shape_now = (int*)malloc(sizeof(int) * local_size);
-            (*sd).shape_next = (int*)malloc(sizeof(int) * local_size);
-            memset((*sd).shape_now, 0, sizeof(int) * local_size);
-            memset((*sd).shape_next, 0, sizeof(int) * local_size);
-            
-            // global shape array
-            (*sd).shape_g = (int*)malloc(sizeof(int) * global_size);
-            memset((*sd).shape_g, 0, sizeof(int) * global_size);
-
-            // local solution arrays
-            (*sd).u_next = (float*)malloc(sizeof(float) * local_size);
-            (*sd).u_now = (float*)malloc(sizeof(float) * local_size);
-            memset((*sd).u_next, 0, sizeof(float) * local_size);
-            memset((*sd).u_now, 0, sizeof(float) * local_size);
-
-            // global solution array
-            (*sd).u_global = (float*)malloc(sizeof(float) * global_size);
-            memset((*sd).u_global, 0, sizeof(float) * global_size);
-        }
-        else
-        {
-            local_size = ((*sd).grid_l[0] + 2) * ((*sd).grid_l[1] + 2) * ((*sd).grid_l[2] + 2);
-            global_size = ((*sd).grid_g[0]) * ((*sd).grid_g[1]) * ((*sd).grid_g[2]);
-
-            // local shape arrays
-            (*sd).shape_now = (int*)malloc(sizeof(int) * local_size);
-            (*sd).shape_next = (int*)malloc(sizeof(int) * local_size);
-            memset((*sd).shape_now, 0, sizeof(int) * local_size);
-            memset((*sd).shape_next, 0, sizeof(int) * local_size);
-            
-            // global shape array
-            (*sd).shape_g = (int*)malloc(sizeof(int) * global_size);
-            memset((*sd).shape_g, 0, sizeof(int) * global_size);
-
-            // local solution arrays
-            (*sd).u_next = (float*)malloc(sizeof(float) * local_size);
-            (*sd).u_now = (float*)malloc(sizeof(float) * local_size);
-            memset((*sd).u_next, 0, sizeof(float) * local_size);
-            memset((*sd).u_now, 0, sizeof(float) * local_size);
-
-            // global solution array
-            (*sd).u_global = (float*)malloc(sizeof(float) * global_size);
-            memset((*sd).u_global, 0, sizeof(float) * global_size);
-        } // end if-else for n_proc
-    }
-    else
-    {
-        fprintf(stderr, "Invalid number of dimensions: %d.  Need to choose either 2D or 3D.\n", sd->n_dims);
-        exit(1);
-    } // end if-else for n_dims
+    // global solution array
+    (*sd).u_global = malloc(sizeof(float) * global_size);
+    memset((*sd).u_global, 0, sizeof(float) * global_size);
 } // end void AllocateArraysFDM(Subdomain sd)
 
 void SubdomainCleanUp(Subdomain *sd)
@@ -415,11 +324,11 @@ void CoordShift(Subdomain *sd, float r)
                     fprintf(stdout, "rank %d: sd->coords[1] = %d\n", sd->rank, sd->coords[1]);
                     fprintf(stdout, "rank %d: x bounds [%d, %d]\n", sd->rank, sd->bounds_l[0], sd->bounds_l[1]);
                     fprintf(stdout, "rank %d: y bounds [%d, %d]\n", sd->rank, sd->bounds_l[2], sd->bounds_l[3]);
-                    sd->shape_now[local_id] = 1;
+                    sd->shape_now[i - sd->bounds_l[0]][j - sd->bounds_l[2]][0] = 1;
                 }
                 else // outside of circle
                 {
-                    sd->shape_now[local_id] = 0;
+                    sd->shape_now[i - sd->bounds_l[0]][j - sd->bounds_l[2]][0] = 0;
                 }
             }
             else if (sd->n_dims == 3)// 3D problem
@@ -432,11 +341,11 @@ void CoordShift(Subdomain *sd, float r)
                                 pow(k - (sd->grid_g[2] / 2), 2.0);
                     if (r_shifted <= r*r) // inside of circle
                     {
-                        sd->shape_now[local_id] = 1;
+                        sd->shape_now[i - sd->bounds_l[0]][j - sd->bounds_l[2]][k - sd->bounds_l[4]] = 1;
                     }
                     else // outside of circle
                     {
-                        sd->shape_now[local_id] = 0;
+                        sd->shape_now[i - sd->bounds_l[0]][j - sd->bounds_l[2]][k - sd->bounds_l[4]] = 0;
                     }
                 } // end k loop
             } // end if-else
