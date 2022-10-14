@@ -5,22 +5,13 @@
 
 #define ROOT 0 // root process
 
-#define MAX_GRID_GLOBAL 10000ULL // maximum number of grid cells along a given dimension globally
-#define MAX_GRID_LOCAL 2000UL // maximum number of grid cells along a given dimension for a given processor
-
-/**
- * @brief enumeration for finding neighbor processors
- */
-enum Neighbors{Front, Back, Left, Right, Up, Down};
-
 /**
  * @brief struct containing items related to subdomain construction and usage
  */
 typedef struct
 {
     int n_proc; // total number of processors
-    int n_proc_dim2D[2];
-    int n_proc_dim3D[3]; // number of processors along each dimension
+    int n_proc_dim[3]; // number of processors along each dimension
     int rank; // rank of process that owns the subdomain in MPI_COMM_WORLD
     MPI_Datatype subdomain_type;
     int coords[3];
@@ -39,13 +30,12 @@ typedef struct
     float dt; // temporal step size
     float mu_x, mu_y, mu_z; // stability factor, mu_i = dt / di**2 where i = x, y, z
 
-    int (*shape_now)[MAX_GRID_LOCAL][MAX_GRID_LOCAL]; // shape array local to a process. used for determining fdm boundaries in case of irregular geometry
-    int (*shape_next)[MAX_GRID_LOCAL][MAX_GRID_LOCAL];
-    int (*shape_g)[MAX_GRID_GLOBAL][MAX_GRID_GLOBAL]; // global shape array -- this might not be necessary. just used for debugging i think
-    
-    float (*u_now)[MAX_GRID_LOCAL][MAX_GRID_LOCAL]; // current result, used to compute next fdm iteration
-    float (*u_next)[MAX_GRID_LOCAL][MAX_GRID_LOCAL]; // stores data after fdm iteration
-    float (*u_global)[MAX_GRID_GLOBAL][MAX_GRID_GLOBAL]; // global solution array
+    int *shape_now; // shape array local to a process. used for determining fdm boundaries in case of irregular geometry
+    int *shape_next;
+    int *shape_g; // global shape array 
+    float *u_now; // current result, used to compute next fdm iteration
+    float *u_next; // stores data after fdm iteration
+    float *u_global; // global solution array
 } Subdomain;
 
 /**
@@ -91,7 +81,9 @@ void AllocateArraysFDM(Subdomain *subdomain);
  */
 void CreateSubdomainType(Subdomain *subdomain);
 
-void CreateSubdomainType2(Subdomain *subdomain); // get rid of this
+void CreateSubdomainType2(Subdomain *sd);
+
+void SetupCollectSubdomainData(Subdomain *subdomain);
 
 /**
  * @brief essentially just a wrapper for MPI_Gather right now. will add more later
@@ -99,18 +91,7 @@ void CreateSubdomainType2(Subdomain *subdomain); // get rid of this
  */
 void CollectSubdomainData(Subdomain *subdomain);
 
-/**
- * @brief helper function for CollectSubdomainData. sets up parameters needed to pass custom MPI
- * datatypes to MPI_Gather
- * @param subdomain 
- */
-void SetupCollectSubdomainData(Subdomain *subdomain);
-
-/**
- * @brief free all memory allocations after the computations are complete
- * @param subdomain the subdomain to free
- */
-void SubdomainCleanUp(Subdomain *subdomain);
+void SubdomainCleanUp(Subdomain *sd);
 
 /**
  * @brief shift the coordinates in a given subdomain so that the center of the global subdomain (dim_X / 2, dim_y / 2) 

@@ -9,7 +9,7 @@ int main(int argc, char** argv)
 {
     int n_proc, rank;
     int time_steps = 5000; // max time steps to iterate
-    float radius = 300.0;
+    float radius = 50.0;
 
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &n_proc);

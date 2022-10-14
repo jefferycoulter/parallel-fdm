@@ -1,2 +1,1 @@
-add_subdirectory(test_process_distribution)
 add_subdirectory(test_shape_array)
