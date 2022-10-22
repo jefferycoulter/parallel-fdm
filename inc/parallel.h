@@ -36,7 +36,7 @@ typedef struct
     float dt; // temporal step size
     float mu_x, mu_y, mu_z; // stability factor, mu_i = dt / di**2 where i = x, y, z
 
-    int (*shape_now); // shape array local to a process. used for determining fdm boundaries in case of irregular geometry
+    int *shape_now; // shape array local to a process. used for determining fdm boundaries in case of irregular geometry
     int *shape_next;
     int *shape_g; // global shape array -- this might not be necessary. just used for debugging i think
     float *u_now; // current result, used to compute next fdm iteration
@@ -88,13 +88,5 @@ void SetupCollectSubdomainData(Subdomain *subdomain);
 void CollectSubdomainData(Subdomain *subdomain);
 
 void SubdomainCleanUp(Subdomain *subdomain);
-
-/**
- * @brief shift the coordinates in a given subdomain so that the center of the global subdomain (dim_X / 2, dim_y / 2) 
- * is moved to the origin (0,0).  this is used for determining boundaries in the case of irregular geometry
- * @param subdomain subdomain to shift
- * @param radius the radius of the irregular geometry
- */
-void CoordShift(Subdomain *subdomain, float radius);
 
 #endif // PARALLEL_INCL

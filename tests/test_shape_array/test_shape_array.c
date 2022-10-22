@@ -1,11 +1,12 @@
 #include "fdm.h"
 #include "io.h"
 #include "parallel.h"
+#include "shape.h"
 
 #include <mpi.h>
 #include <stdlib.h>
 
-int main(int argc, char **argv)
+int main(int argc, char **argv) 
 {
     int n_proc, rank;
     MPI_Status status;

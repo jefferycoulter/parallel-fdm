@@ -15,7 +15,8 @@ add_executable(${PROJECT_NAME} src/main.c
     inc/fdm.h
     inc/io.h
     inc/parallel.h
-
+    inc/shape.h
+    
     src/fdm.c
     src/io.c
     src/parallel.c

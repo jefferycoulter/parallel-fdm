@@ -1,10 +1,10 @@
-project(shape_array)
+project(process_distribution)
 
 # set the output directory
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/tests/bin)
 
 # specify source and header files
-set(SRCS ${CMAKE_CURRENT_SOURCE_DIR}/test_shape_array.c
+set(SRCS ${CMAKE_CURRENT_SOURCE_DIR}/test_process_distribution.c
     ${CMAKE_SOURCE_DIR}/src/fdm.c
     ${CMAKE_SOURCE_DIR}/src/io.c
     ${CMAKE_SOURCE_DIR}/src/parallel.c

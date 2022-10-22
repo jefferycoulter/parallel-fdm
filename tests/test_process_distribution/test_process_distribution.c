@@ -1,6 +1,7 @@
 #include "fdm.h"
 #include "io.h"
 #include "parallel.h"
+#include "shape.h"
 
 #include <mpi.h>
 #include <stdlib.h>

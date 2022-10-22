@@ -1,5 +1,6 @@
 #include "fdm.h"
 #include "io.h"
+#include "shape.h"
 
 #include <mpi.h>
 
@@ -7,7 +8,7 @@
 #include <math.h>
 #include <memory.h>
 
-enum Mode{FD, Laplace};
+//enum Mode{FD, Laplace};
 
 void ComputeFD(Subdomain *sd, int bc, int time_steps)
 {
@@ -32,48 +33,13 @@ void ComputeFD(Subdomain *sd, int bc, int time_steps)
 
 void FTCS(Subdomain *sd, int bc)
 {
-    for (int i = 0; i < sd->grid_l[0]; i ++)
+    int r = 0, c = 0, d = 0; // row, column, depth
+
+    for (int i = 0; i < sd->grid_l[0] * sd->grid_l[1] * sd->grid_l[2]; i++)
     {
-        for (int j = 0; j < sd->grid_l[1]; j++)
-        {
-            if (sd->n_dims == 2) // 2D problem
-            {   
-                switch (sd->shape_next[i * sd->grid_l[1] + j])
-                {
-                case OUTSIDE:
-                    break;
-                case INSIDE:
-                    InteriorFD(sd, i, j, 0);
-                    break;
-                case BOUNDARY:
-                    BoundaryFD(sd, bc, i, j, 0);
-                    break;
-                }
-            }
-            else if (sd->n_dims == 3)// 3D problem
-            {
-                for (int k = 0; k < sd->grid_l[2]; k++)
-                {
-                    switch (sd->shape_next[(i * sd->grid_l[1] + j) * sd->grid_l[2] + k])
-                    {
-                    case OUTSIDE:
-                        break;
-                    case INSIDE:
-                        InteriorFD(sd, i, j, k);
-                        break;
-                    case BOUNDARY:
-                        BoundaryFD(sd, bc, i, j, k);
-                        break;
-                    } // end switch
-                } // end k loop
-            }
-            else
-            {
-                fprintf(stderr, "Invalid number of dimensions: %d.  Need to choose either 2D or 3D.\n", sd->n_dims);
-                exit(1);
-            } // end if-else
-        } // end j loop
-    } // end i loop
+        InteriorOrBoundary(sd, bc, r, c, d)
+        Increment(i, r, c, d)
+    }
 
     // copy new data to old data array for next iteration
     // note:
@@ -81,21 +47,15 @@ void FTCS(Subdomain *sd, int bc)
     memcpy(sd->u_now, sd->u_next, sd->grid_l[0] * sd->grid_l[1] * sd->grid_l[2] * sizeof((*sd->u_now)));
 } // end void FTCS(Subdomain sd, int bc)
 
-void InteriorFD(Subdomain *sd, int i, int j, int k)
+void InteriorFD(Subdomain *sd, int r, int c, int d)
 {
-    if (k == 0) // 2D problem
+    if (d == 0)
     {
-        sd->u_next[i * sd->grid_l[1] + j] = (1 - 2 * sd->mu_x - 2 * sd->mu_y) * sd->u_now[i * sd->grid_l[1] + j]          \
-            + sd->mu_x * (sd->u_now[i * sd->grid_l[1] + j + sd->grid_l[0]] + sd->u_now[i * sd->grid_l[1] + j - sd->grid_l[0]])  \
-            + sd->mu_y * (sd->u_now[i * sd->grid_l[1] + j + 1] + sd->u_now[i * sd->grid_l[1] + j - 1]);
+        sd->u_next[r * sd->grid_l[1] + c] = FDX(sd, r, c, 0) + FDY(sd, r, c, 0);
     }
     else
     {
-
-            sd->u_next[(i * sd->grid_l[1] + j) * sd->grid_l[2] + k] = (1 - 2 * sd->mu_x - 2 * sd->mu_y - 2 * sd->mu_z) * sd->u_now[(i * sd->grid_l[1] + j) * sd->grid_l[2] + k]                   \
-            + sd->mu_x * (sd->u_now[(i * sd->grid_l[1] + j + sd->grid_l[0]) * sd->grid_l[2] + k] + sd->u_now[(i * sd->grid_l[1] + j - sd->grid_l[0]) * sd->grid_l[2] + k])    \
-            + sd->mu_y * (sd->u_now[(i * sd->grid_l[1] + j + 1) * sd->grid_l[2] + k] + sd->u_now[(i * sd->grid_l[1] + j - 1) * sd->grid_l[2] + k])                  \
-            + sd->mu_z * (sd->u_now[(i * sd->grid_l[1] + j) * sd->grid_l[2] + k + sd->grid_l[0] * sd->grid_l[1]] + sd->u_now[(i * sd->grid_l[1] + j) * sd->grid_l[2] + k - sd->grid_l[0] * sd->grid_l[1]]);
+        sd->u_next[(d * sd->grid_l[1] + r) * sd->grid_l[0] + c] = FDX(sd, r, c, d) + FDY(sd, r, c, d) + FDZ(sd, r, c, d);
     }
 } // end void InteriorFD(Subdomain sd, int i, int j, int k)
 
@@ -111,59 +71,7 @@ void BoundaryFD(Subdomain *sd, int bc, int i, int j, int k)
         } // end case Dirichlet
         case VonNeumann:
         {
-            if (k == 0) // 2D problem
-            {
-                sd->u_next[i * sd->grid_l[1] + j] = (1 - 2 * sd->mu_x - 2 * sd->mu_y) * sd->u_now[i * sd->grid_l[1] + j]          \
-                    + sd->mu_x * (sd->u_now[i * sd->grid_l[1] + j + sd->grid_l[0]] + sd->u_now[i * sd->grid_l[1] + j - sd->grid_l[0]])  \
-                    + sd->mu_y * (sd->u_now[i * sd->grid_l[1] + j + 1] + sd->u_now[i * sd->grid_l[1] + j - 1]);
-            }
-            else // 3d problem
-            {
-                sd->u_next[(i * sd->grid_l[1] + j) * sd->grid_l[2] + k] = (1 - 2 * sd->mu_x - 2 * sd->mu_y - 2 * sd->mu_z) * sd->u_now[(i * sd->grid_l[1] + j) * sd->grid_l[2] + k]                   \
-                + sd->mu_x * (sd->u_now[(i * sd->grid_l[1] + j + sd->grid_l[0]) * sd->grid_l[2] + k] + sd->u_now[(i * sd->grid_l[1] + j - sd->grid_l[0]) * sd->grid_l[2] + k])    \
-                + sd->mu_y * (sd->u_now[(i * sd->grid_l[1] + j + 1) * sd->grid_l[2] + k] + sd->u_now[(i * sd->grid_l[1] + j - 1) * sd->grid_l[2] + k])                  \
-                + sd->mu_z * (sd->u_now[(i * sd->grid_l[1] + j) * sd->grid_l[2] + k + sd->grid_l[0] * sd->grid_l[1]] + sd->u_now[(i * sd->grid_l[1] + j) * sd->grid_l[2] + k - sd->grid_l[0] * sd->grid_l[1]]);
-            }
-            if (sd->grid_g[2] == 0)
-            {
-                // corners
-                // bottom left corner
-                // bottom right corner
-                // top left corner
-                // top right corner
-
-                // edges
-                // left edge
-                // right edge
-                // bottom edge
-                // top edge
-            }
-            else
-            {
-                    // corners
-                    // front bottom left corner
-                    // front bottom right corner
-                    // front top left corner
-                    // front top right corner
-                    // back bottom left corner
-                    // back bottom right corner
-                    // back top left corner
-                    // back top right corner
-
-                    // edges
-                    // front left edge
-                    // front right edge
-                    // front bottom edge
-                    // front top edge
-                    // back left edge
-                    // back right edge
-                    // back bottom edge
-                    // back top edge
-                    // middle left edge
-                    // middle right edge
-                    // middle bottom edge
-                    // middle top edge
-            } // end if-else
+            // need to implement
             break;
         } // end case VonNeumann
     } // end switch
@@ -178,74 +86,14 @@ void CreateShapeArray(Subdomain *subdomain, float radius)
 
 void ApplyLaplaceFilter(Subdomain *sd)
 {
-    for (int i = 1; i < sd->grid_l[0] - 1; i++)
+    int r = 0, c = 0, d = 0; // row, column, depth
+
+    for (int i = 0; i < sd->grid_l[0] * sd->grid_l[1] * sd->grid_l[2]; i++)
     {
-        for (int j = 1; j < sd->grid_l[1] - 1; j++)
-        {
-            if (sd->n_dims == 2)
-            {
-                // apply laplace filter to each point
-                sd->shape_next[i * sd->grid_l[1] + j] = -4 * sd->shape_now[i * sd->grid_l[1] + j]          \
-                    + sd->shape_now[i * sd->grid_l[1] + j + sd->grid_l[0]] + sd->shape_now[i * sd->grid_l[1] + j - sd->grid_l[0]]  \
-                    + sd->shape_now[i * sd->grid_l[1] + j + 1] + sd->shape_now[i * sd->grid_l[1] + j - 1];
+        sd->shape_next[(d * sd->grid_l[1] + r) * sd->grid_l[0] + c] = Laplace(sd, r, c, d);
+        AssignValue(sd, r, c, d);
 
-                // assign point correct value for finite difference computations
-                switch (sd->shape_next[i * sd->grid_l[1] + j])
-                {
-                    case 0: // if the new value is zero, then the previous value was either INSIDE or OUTSIDE
-                        switch (sd->shape_now[i * sd->grid_l[1] + j])
-                        {
-                            case OUTSIDE: // if previous value was OUTSIDE, then new value is still outside
-                                sd->shape_next[i * sd->grid_l[1] + j] = OUTSIDE;
-                                break;
-                            
-                            case INSIDE: // if previous value was INSIDE, then switch it back to inside
-                                sd->shape_next[i * sd->grid_l[1] + j] = INSIDE;
-                                break;
-                        } // end switch
-                        break;
-                    default: // if the new value is not zero, then it is a boundary
-                        sd->shape_next[i * sd->grid_l[1] + j] = BOUNDARY;
-                        break;
-                } // end switch
-            }
-            else if (sd->n_dims == 3)
-            {
-                for (int k = 1; k < sd->grid_l[2] - 1; k ++)
-                {
-                    // apply laplace filter to each point
-                    sd->shape_next[(i * sd->grid_l[1] + j) * sd->grid_l[2] + k] = -6 * sd->shape_now[(i * sd->grid_l[1] + j) * sd->grid_l[2] + k]                   \
-                    + sd->shape_now[(i * sd->grid_l[1] + j + sd->grid_l[0]) * sd->grid_l[2] + k] + sd->shape_now[(i * sd->grid_l[1] + j - sd->grid_l[0]) * sd->grid_l[2] + k]   \
-                    + sd->shape_now[(i * sd->grid_l[1] + j + 1) * sd->grid_l[2] + k] + sd->shape_now[(i * sd->grid_l[1] + j - 1) * sd->grid_l[2] + k]                  \
-                    + sd->shape_now[(i * sd->grid_l[1] + j) * sd->grid_l[2] + k + sd->grid_l[0] * sd->grid_l[1]] + sd->shape_now[(i * sd->grid_l[1] + j) * sd->grid_l[2] + k - sd->grid_l[0] * sd->grid_l[1]];
-
-                    // assign point correct value for finite difference computations
-                    switch (sd->shape_next[(i * sd->grid_l[1] + j) * sd->grid_l[2] + k])
-                    {
-                        case 0: // if the new value is zero, then the previous value was either INSIDE or OUTSIDE
-                            switch (sd->shape_now[(i * sd->grid_l[1] + j) * sd->grid_l[2] + k])
-                            {
-                                case OUTSIDE: // if previous value was OUTSIDE, then new value is still outside
-                                    sd->shape_next[(i * sd->grid_l[1] + j) * sd->grid_l[2] + k] = OUTSIDE;
-                                    break;
-                                
-                                case INSIDE: // if previous value was INSIDE, then switch it back to inside
-                                    sd->shape_next[(i * sd->grid_l[1] + j) * sd->grid_l[2] + k] = INSIDE;
-                                    break;
-                            }
-                            break;
-                        default: // if the new value is not zero, then it is a boundary
-                            sd->shape_next[(i * sd->grid_l[1] + j) * sd->grid_l[2] + k] = BOUNDARY;
-                            break;
-                    }
-                }
-            }
-            else
-            {
-                fprintf(stderr, "Invalid number of dimensions: %d.  Need to choose either 2D or 3D.\n", sd->n_dims);
-                exit(1);
-            }
-        }
+        Increment(i, r, c, d)
     }
 }
 
@@ -253,70 +101,39 @@ void SetBoundaryConditions(Subdomain *sd)
 {
     int bc = 10.0;
 
-    for (int i = 0; i < sd->grid_l[0]; i++)
+    int r = 0, c = 0, d = 0;
+    for (int i = 0; i < sd->grid_l[0] * sd->grid_l[1] * sd->grid_l[2]; i++)
     {
-        for (int j = 0; j < sd->grid_l[1]; j++)
+        switch (sd->shape_next[(d * sd->grid_l[1] + r) * sd->grid_l[0] + c])
         {
-            if (sd->n_dims == 2)
-            {
-                switch (sd->shape_next[i * sd->grid_l[1] + j])
-                {
-                    case BOUNDARY:
-                        sd->u_now[i * sd->grid_l[1] + j] = bc;
-                        break;
-                    default:
-                        break;
-                }
-            }
-            else if (sd->n_dims == 3)
-            {
-                for (int k = 0; k < sd->grid_l[2]; k++)
-                {
-
-                }
-            }
-            else
-            {
-                fprintf(stderr, "Invalid number of dimensions: %d.  Need to choose either 2D or 3D.\n", sd->n_dims);
-                exit(1);
-            }
+            case BOUNDARY:
+                sd->u_now[(d * sd->grid_l[1] + r) * sd->grid_l[0] + c] = bc;
+                break;
+            default:
+                break;
         }
-    }
 
+        Increment(i, r, c, d)
+    }
 } // end void SetBoundaryConditions(Subdomain sd)
 
 void SetInitialConditions(Subdomain *sd)
 {
     int ic = -10.0;
 
-    for (int i = 0; i < sd->grid_l[0]; i++)
+    int r = 0, c = 0, d = 0;
+    for (int i = 0; i < sd->grid_l[0] * sd->grid_l[1] * sd->grid_l[2]; i++)
     {
-        for (int j = 0; j < sd->grid_l[1]; j++)
+        switch (sd->shape_next[(d * sd->grid_l[1] + r) * sd->grid_l[0] + c])
         {
-            if (sd->n_dims == 2)
-            {
-                switch (sd->shape_next[i * sd->grid_l[1] + j])
-                {
-                    case INSIDE:
-                        sd->u_now[i * sd->grid_l[1] + j] = ic;
-                        break;
-                    default:
-                        break;
-                }
-            }
-            else if (sd->n_dims == 3)
-            {
-                for (int k = 0; k < sd->grid_l[2]; k++)
-                {
-
-                }
-            }
-            else
-            {
-                fprintf(stderr, "Invalid number of dimensions: %d.  Need to choose either 2D or 3D.\n", sd->n_dims);
-                exit(1);
-            }
+            case INSIDE:
+                sd->u_now[(d * sd->grid_l[1] + r) * sd->grid_l[0] + c] = ic;
+                break;
+            default:
+                break;
         }
+
+        Increment(i, r, c, d)
     }
 } // end void SetInitialConditions(Subdomain sd)
 
