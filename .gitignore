@@ -5,6 +5,9 @@ build/
 data/
 tests/bin
 
+# python
+scripts/kron.py
+
 # cmake files
 CMakeLists.txt.user
 CMakeCache.txt
