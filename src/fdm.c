@@ -10,8 +10,8 @@
 
 void ComputeFD(Subdomain *sd, int bc, int time_steps)
 {
-    MPI_Gather(sd->u_now, sd->grid_l[0] * sd->grid_l[1] * sd->grid_l[2], MPI_FLOAT, 
-                   sd->u_global, sd->grid_l[0] * sd->grid_l[1] * sd->grid_l[2], MPI_FLOAT,
+    MPI_Gather(sd->u_now, (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT, 
+                   sd->u_global, (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT,
                    ROOT, MPI_COMM_WORLD);
     int t = 0;
     WriteData(*sd, FDM); // save initial conditions
@@ -20,8 +20,8 @@ void ComputeFD(Subdomain *sd, int bc, int time_steps)
         FTCS(sd, bc); // forward-time central-space scheme
 
         // send the local computations to ROOT process
-        MPI_Gather(sd->u_next, sd->grid_l[0] * sd->grid_l[1] * sd->grid_l[2], MPI_FLOAT, 
-                   sd->u_global, sd->grid_l[0] * sd->grid_l[1] * sd->grid_l[2], MPI_FLOAT,
+        MPI_Gather(sd->u_next, (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT, 
+                   sd->u_global, (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT,
                    ROOT, MPI_COMM_WORLD);
         if (sd->rank == ROOT)
         {
@@ -60,7 +60,7 @@ void FTCS(Subdomain *sd, int bc)
     // copy new data to old data array for next iteration
     // note:
     // sd.grid_l[2] = 1 for 2D case, so multiplying it here doesn't matter if the problem is 2D
-    memcpy(sd->u_now, sd->u_next, sd->grid_l[0] * sd->grid_l[1] * sd->grid_l[2] * sizeof((*sd->u_now)));
+    memcpy(sd->u_now, sd->u_next, (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2] * sizeof((*sd->u_now)));
 } // end void FTCS(Subdomain *sd, int bc)
 
 void InteriorFD(Subdomain *sd, int i, int j, int k)
@@ -193,20 +193,17 @@ void DetermineStepSizes(Subdomain *sd)
     // step sizes
     sd->dx = (float)sd->dims_g[0] / (float)sd->grid_g[0];
     sd->dy = (float)sd->dims_g[1] / (float)sd->grid_g[1];
-    if (sd->n_dims == 3)
-    {
-        sd->dz = (float)sd->dims_g[2] / (float)sd->grid_g[2];
-        sd->mu_z = (sd->dt / pow(sd->dz, 2.0)) * D;
-        if (sd->mu_z > 0.5) { fprintf(stderr, "Step sizes are too large. dz = %f, mu_z = %f > 0.5\n", sd->dx, sd->mu_z); exit(1); }
-    }
+    sd->dz = (float)sd->dims_g[2] / (float)sd->grid_g[2];
 
     // stability factors
     sd->mu_x = (sd->dt / pow(sd->dx, 2.0)) * D;
     sd->mu_y = (sd->dt / pow(sd->dy, 2.0)) * D;
+    sd->mu_z = (sd->dt / pow(sd->dz, 2.0)) * D;
 
     // make sure step sizes are appropriate for stable results
     if (sd->mu_x > 0.5) { fprintf(stderr, "Step sizes are too large. dx = %f, mu_x = %f > 0.5\n", sd->dx, sd->mu_x); exit(1); }
     if (sd->mu_y > 0.5) { fprintf(stderr, "Step sizes are too large. dy = %f, mu_y = %f > 0.5\n", sd->dx, sd->mu_y); exit(1); }
+    if (sd->mu_z > 0.5) { fprintf(stderr, "Step sizes are too large. dz = %f, mu_z = %f > 0.5\n", sd->dx, sd->mu_z); exit(1); }
 } // end void DetermineStepSizes(Subdomain sd)
 
 

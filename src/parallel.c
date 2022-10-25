@@ -113,22 +113,22 @@ void DetermineSubdomainGridBounds(Subdomain *sd)
     // assign the process for this subdomain cartesian coordinates.
     if (sd->n_dims == 2)
     {
-        sd->coords[0] = floor(sd->rank / sd->n_proc_dim[1]);
-        sd->coords[1] = sd->rank - sd->coords[0] * sd->n_proc_dim[1];
+        sd->coords[0] = floor((*sd).rank / (*sd).n_proc_dim[1]);
+        sd->coords[1] = (*sd).rank - (*sd).coords[0] * (*sd).n_proc_dim[1];
         sd->coords[2] = 0;
     }
     else if (sd->n_dims == 3)
     {
         // to work out these equations, think of converting 10,000 seconds to hr:min:s (z:y:x)
-        sd->coords[2] = floor(sd->rank / (sd->n_proc_dim[0] * sd->n_proc_dim[1]));
-        sd->coords[1] = floor((sd->rank - sd->coords[2] * sd->n_proc_dim[0] * sd->n_proc_dim[1]) / sd->n_proc_dim[0]);
-        sd->coords[0] = (sd->rank - sd->coords[2] * sd->n_proc_dim[0] * sd->n_proc_dim[1]) - sd->n_proc_dim[0] * sd->coords[1];
+        sd->coords[2] = floor((*sd).rank / ((*sd).n_proc_dim[0] * (*sd).n_proc_dim[1]));
+        sd->coords[1] = floor(((*sd).rank - (*sd).coords[2] * (*sd).n_proc_dim[0] * (*sd).n_proc_dim[1]) / (*sd).n_proc_dim[0]);
+        sd->coords[0] = ((*sd).rank - (*sd).coords[2] * (*sd).n_proc_dim[0] * (*sd).n_proc_dim[1]) - (*sd).n_proc_dim[0] * (*sd).coords[1];
     }
 
     // compute number of fdm grid cells along each dimension that will belong to a given process
     for (int n = 0; n < sd->n_dims; n++)
     {
-        sd->grid_l[n] = sd->grid_g[n] / sd->n_proc_dim[n];
+        sd->grid_l[n] = (*sd).grid_g[n] / (*sd).n_proc_dim[n];
 
         // determine the bounds of the subdomain from the global perspective
         if (sd->n_proc_dim[n] == 1) // local grid is same as global grid along this dimension
@@ -141,9 +141,9 @@ void DetermineSubdomainGridBounds(Subdomain *sd)
         else // divide the global grid size amongst processes
         {
             // corresponds to i_start, j_start, k_start
-            sd->bounds_l[2 * n] = sd->grid_l[n] * sd->coords[n];
+            sd->bounds_l[2 * n] = (*sd).grid_l[n] * (*sd).coords[n];
             // corresponds to i_end, j_end, k_end
-            sd->bounds_l[2 * n + 1] = sd->grid_l[n] * (sd->coords[n] + 1);
+            sd->bounds_l[2 * n + 1] = (*sd).grid_l[n] * ((*sd).coords[n] + 1);
         }
 
         // this initializes the z slot to 1 in case the problem is only 2D.  if the problem is 3D
@@ -160,7 +160,7 @@ void DetermineSubdomainGridBounds(Subdomain *sd)
 void CollectSubdomainData(Subdomain *sd)
 {       
     int offset = sd->ghost_size;
-    int global_id = (((sd->bounds_l[0] * sd->grid_g[1]) + sd->bounds_l[2]) * sd->grid_g[2] + sd->bounds_l[4]);  
+    int global_id = ((((*sd).bounds_l[0] * (*sd).grid_g[1]) + (*sd).bounds_l[2]) * (*sd).grid_g[2] + (*sd).bounds_l[4]);  
     
     MPI_Barrier(sd->COMM_FDM);
 
@@ -229,10 +229,10 @@ void CoordShift(Subdomain *sd, float r)
         {
             for (int k = sd->bounds_l[4]; k < sd->bounds_l[5]; k++)
             {
-                local_id = ID(sd, (i - sd->bounds_l[0]), (j - sd->bounds_l[2]), (k - sd->bounds_l[4])) + offset;
+                local_id = ID(sd, (i - (*sd).bounds_l[0]), (j - (*sd).bounds_l[2]), (k - (*sd).bounds_l[4])) + offset;
                 
-                r_shifted = pow(i - (sd->grid_g[0] / 2), 2.0) + pow(j - (sd->grid_g[1] / 2), 2.0);
-                if (sd->n_dims == 3) { r_shifted += pow(k - (sd->grid_g[2] / 2), 2.0); }
+                r_shifted = pow(i - ((*sd).grid_g[0] / 2), 2.0) + pow(j - ((*sd).grid_g[1] / 2), 2.0);
+                if (sd->n_dims == 3) { r_shifted += pow(k - ((*sd).grid_g[2] / 2), 2.0); }
                 
                 if (r_shifted <= r*r) // inside of circle
                 {
