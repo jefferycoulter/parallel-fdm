@@ -5,12 +5,6 @@
 #include <math.h>
 
 /**
- * @brief boundary conditions that can be used for fdm. outside region of interest (i.e. no FDM computations here),
- * inside region of interest (i.e. where FDM computations occur), or boundary of region of interestion
- */
-enum BC{Dirichlet, VonNeumann};
-
-/**
  * @brief convert point in 3D space to a corresponding index in linear memory
  * @param sd subdomain containing the point
  * @param i x index
@@ -20,8 +14,13 @@ enum BC{Dirichlet, VonNeumann};
 #define ID(sd, i, j, k) ((i * sd->grid_l[1]) + j) * sd->grid_l[2] + k
 
 /**
+ * @brief boundary conditions that can be used for fdm. outside region of interest (i.e. no FDM computations here),
+ * inside region of interest (i.e. where FDM computations occur), or boundary of region of interestion
+ */
+enum BC{Dirichlet, VonNeumann};
+
+/**
  * @brief location of fdm grid cell
- * 
  */
 enum Location{Outside, Inside, Boundary};
 
@@ -84,18 +83,47 @@ void DiscretizeSubdomain(Subdomain *subdomain);
  */
 void DetermineStepSizes(Subdomain *sd);
 
+/**
+ * @brief finite difference in x direction
+ * @param sd subdomain
+ * @param i x index
+ * @param j y index
+ * @param k z index
+ */
 #define FDX(sd, i, j, k, off)   (1 - 2 * sd->mu_x) * sd->u_now[off + (i * sd->grid_l[1] + j) * sd->grid_l[2] + k]                             \
                                 + sd->mu_x * (sd->u_now[off + (i * sd->grid_l[1] + j + sd->grid_l[0]) * sd->grid_l[2] + k])                   \
                                 + sd->mu_x * (sd->u_now[off + (i * sd->grid_l[1] + j - sd->grid_l[0]) * sd->grid_l[2] + k])
 
+/**
+ * @brief finite difference in y direction
+ * @param sd subdomain
+ * @param i x index
+ * @param j y index
+ * @param k z index
+ */
 #define FDY(sd, i, j, k, off)   (1 - 2 * sd->mu_y) * sd->u_now[off + (i * sd->grid_l[1] + j) * sd->grid_l[2] + k]                             \
                                 + sd->mu_y * (sd->u_now[off + (i * sd->grid_l[1] + j + 1) * sd->grid_l[2] + k])                               \
                                 + sd->mu_y * (sd->u_now[off + (i * sd->grid_l[1] + j - 1) * sd->grid_l[2] + k])
 
+/**
+ * @brief finite difference in z direction
+ * @param sd subdomain
+ * @param i x index
+ * @param j y index
+ * @param k z index
+ */
 #define FDZ(sd, i, j, k, off)   (1 - 2 * sd->mu_z) * sd->u_now[off + (i * sd->grid_l[1] + j) * sd->grid_l[2] + k]                             \
                                 + sd->mu_z * (off + sd->u_now[(i * sd->grid_l[1] + j) * sd->grid_l[2] + k + sd->grid_l[0] * sd->grid_l[1]])   \
                                 + sd->mu_z * (off + sd->u_now[(i * sd->grid_l[1] + j) * sd->grid_l[2] + k - sd->grid_l[0] * sd->grid_l[1]])
 
+/**
+ * @brief apply finite difference at point (i, j, k)
+ * @param sd subdomain
+ * @param i x index
+ * @param j y index
+ * @param k z index
+ * @param off offset due to ghost cell
+ */
 #define FD(sd, i, j, k, off) ((k) == 0 ? FDX(sd, i, j, k, off) + FDY(sd, i, j, k, off) : FDX(sd, i, j, k, off) + FDY(sd, i, j, k, off) + FDZ(sd, i, j, k, off))
 
 #endif // FDM_INCL

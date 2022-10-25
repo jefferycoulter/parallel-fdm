@@ -26,11 +26,11 @@ void GetInput(Subdomain *sd, int n_proc, int rank)
     sd->n_dims = 3;
     sd->dims_g[0] = 40;
     sd->dims_g[1] = 40;
-    sd->dims_g[2] = 0;
+    sd->dims_g[2] = 40;
 
     sd->grid_g[0] = 100;
     sd->grid_g[1] = 100;
-    sd->grid_g[2] = 1;
+    sd->grid_g[2] = 100;
     sd->dt = 0.005; // 50 milliseconds
 } // end void GetInput(Subdomain *sd, int n_proc, int rank)
 
@@ -40,8 +40,8 @@ void SplitProcessorsAlongDims(Subdomain *sd)
     if (sd->n_dims == 2)
     {
         // split along y direction
-        sd->n_proc_dim[0] = sd->n_proc;
-        sd->n_proc_dim[1] = 1;
+        sd->n_proc_dim[0] = 1;
+        sd->n_proc_dim[1] = sd->n_proc;
     }
     else if (sd->n_dims == 3)
     {
@@ -57,7 +57,7 @@ void GetNeighbors(Subdomain *sd)
     sd->neighbors[0] = MPI_PROC_NULL;
     sd->neighbors[1] = MPI_PROC_NULL;
     
-    if (sd->n_dims ==2 )
+    if (sd->n_dims == 2)
     { 
         int periods[2] = {0, 0}; 
         int proc_dim[2] = {sd->n_proc_dim[0], sd->n_proc_dim[1]};
@@ -77,7 +77,7 @@ void ShareGhosts(Subdomain *sd, int type)
 
     int id_send_up = (*sd).ghost_size;
     int id_recv_up = ((*sd).ghost_size + ((*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2]));
-    int id_send_down = (((*sd).grid_l[1] * (*sd).grid_l[2]) * ((*sd).grid_l[0] - 1));
+    int id_send_down = ((((*sd).grid_l[1] * (*sd).grid_l[2]) * ((*sd).grid_l[0] - 1)) + ((*sd).grid_l[1] * (*sd).grid_l[2]));
     int id_recv_down = 0;
 
     MPI_Status status;
@@ -160,8 +160,10 @@ void DetermineSubdomainGridBounds(Subdomain *sd)
 void CollectSubdomainData(Subdomain *sd)
 {       
     int offset = sd->ghost_size;
-    int global_id = ((sd->bounds_l[0] * sd->grid_g[1] + sd->bounds_l[2]) * sd->grid_g[2] + sd->bounds_l[4]);  
+    int global_id = (((sd->bounds_l[0] * sd->grid_g[1]) + sd->bounds_l[2]) * sd->grid_g[2] + sd->bounds_l[4]);  
     
+    MPI_Barrier(sd->COMM_FDM);
+
     MPI_Gather(&((*sd).shape_next[offset]), (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_INT, 
                &((*sd).shape_g[global_id]), (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_INT,
                ROOT, sd->COMM_FDM);
@@ -173,8 +175,8 @@ void AllocateArraysFDM(Subdomain *sd)
     int local_size, global_size;
 
     if (sd->n_proc == 1) { sd->ghost_size = 0; } // sequential, so no ghost cells
-    else if (sd->n_proc !=1 && sd->n_dims == 2) { sd->ghost_size = sd->grid_l[1]; } // ghost cell is size of row/column
-    else if (sd->n_proc !=1 && sd->n_dims == 3) { sd->ghost_size = sd->grid_l[1] * sd->grid_l[2]; } // ghost cell is size of plane
+    else if (sd->n_proc !=1 && sd->n_dims == 2) { sd->ghost_size = (*sd).grid_l[1]; } // ghost cell is size of row/column
+    else if (sd->n_proc !=1 && sd->n_dims == 3) { sd->ghost_size = (*sd).grid_l[1] * (*sd).grid_l[2]; } // ghost cell is size of plane
 
     local_size = ((*sd).grid_l[0]) * ((*sd).grid_l[1]) * ((*sd).grid_l[2]) + (2 * sd->ghost_size);
     global_size = ((*sd).grid_g[0]) * ((*sd).grid_g[1]) * ((*sd).grid_g[2]);

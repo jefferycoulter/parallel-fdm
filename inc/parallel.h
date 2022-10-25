@@ -18,9 +18,9 @@ typedef struct
     int n_proc; // total number of processors
     int n_proc_dim[3]; // number of processors along each dimension
     int rank; // rank of process that owns the subdomain in MPI_COMM_WORLD
-    MPI_Comm COMM_FDM;
-    int coords[3];
-    int neighbors[2];
+    MPI_Comm COMM_FDM; // finite difference cartesian communicator
+    int coords[3]; // cartesian coordinates of process
+    int neighbors[2]; // neighbor processes
 
     int n_dims; // number of dimensions
     int dims_g[3]; // global domain length along each dimension
@@ -76,6 +76,7 @@ void GetNeighbors(Subdomain *subdomain);
 /**
  * @brief send and recieve ghost cells from neighboring processors
  * @param subdomain subdomain to send/recieve
+ * @param type FDM or Shape. specifies which arrays should share ghost cells
  */
 void ShareGhosts(Subdomain *subdomain, int type);
 
