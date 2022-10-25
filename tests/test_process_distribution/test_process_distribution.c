@@ -9,9 +9,6 @@
 int main(int argc, char **argv)
 {
     int n_proc, rank;
-    MPI_Status status;
-    int time_steps = 1000; // max time steps to iterate
-    float radius = 40.0;
 
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &n_proc);
@@ -19,26 +16,23 @@ int main(int argc, char **argv)
 
     //initialize the subdomain on each process
     Subdomain *sd = CreateSubdomain(n_proc, rank);
-
-    CoordShift(sd, radius);
-    //CreateShapeArray(sd, radius);
     
-    /*
-    fprintf(stdout, "rank %d: sd->coords[0] = %d\n", sd->rank, sd->coords[0]);
-    fprintf(stdout, "rank %d: sd->coords[1] = %d\n", sd->rank, sd->coords[1]);
-    for (int n = 0; n < sd->n_dims; n++)
-    {
-        fprintf(stdout, "rank %d: sd->n_proc_dim[%d] = %d\n", sd->rank, n, sd->n_proc_dim2D[n]);
-        fprintf(stdout, "rank %d: sd->grid_l[%d] = %d\n", sd->rank, n, sd->grid_l[n]);
-        fprintf(stdout, "rank %d: sd->bounds_l[%d] = %d\n", sd->rank, 2*n, sd->bounds_l[2 * n]);
-        fprintf(stdout, "rank %d: sd->bounds_l[%d] = %d\n", sd->rank, 2*n+1, sd->bounds_l[2 * n + 1]);
-    }
-    */
-    CollectSubdomainData(sd);
-    if ((*sd).rank == ROOT)
-    {
-        WriteData(*sd, Shape);
-    }
+    fprintf(stdout, "rank %d: coods = (%d, %d, %d)\n",  sd->rank,       \
+                                                        sd->coords[0],  \
+                                                        sd->coords[1],  \
+                                                        sd->coords[2]);
+
+    fprintf(stdout, "rank %d: n_proc_dim = (%d, %d, %d)\n", sd->rank,           \
+                                                            sd->n_proc_dim[0],  \
+                                                            sd->n_proc_dim[1],  \
+                                                            sd->n_proc_dim[2]);
+    fprintf(stdout, "rank %d: bounds = [%d:%d, %d:%d, %d:%d]\n",  sd->rank,                         \
+                                                                sd->bounds_l[0], sd->bounds_l[1],   \
+                                                                sd->bounds_l[2], sd->bounds_l[3],   \
+                                                                sd->bounds_l[4], sd->bounds_l[5]);
+    fprintf(stdout, "rank %d: neighbor up: %d \t neighbor down: %d\n",  sd->rank,               \
+                                                                        sd->neighbors[0],       \
+                                                                        sd->neighbors[1]);
    
     SubdomainCleanUp(sd);
 
