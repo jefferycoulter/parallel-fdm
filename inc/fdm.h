@@ -2,15 +2,28 @@
 #define FDM_INCL
 
 #include "parallel.h"
-
-#define OUTSIDE 0 // outside region of interest (i.e. no FDM computations here)
-#define INSIDE 1 // region of interest (i.e. where FDM computations occur)
-#define BOUNDARY 2 // boundary of region of interestion
+#include <math.h>
 
 /**
- * @brief boundary conditions that can be used for fdm
+ * @brief boundary conditions that can be used for fdm. outside region of interest (i.e. no FDM computations here),
+ * inside region of interest (i.e. where FDM computations occur), or boundary of region of interestion
  */
 enum BC{Dirichlet, VonNeumann};
+
+/**
+ * @brief convert point in 3D space to a corresponding index in linear memory
+ * @param sd subdomain containing the point
+ * @param i x index
+ * @param j y index
+ * @param k z index
+ */
+#define ID(sd, i, j, k) ((i * sd->grid_l[1]) + j) * sd->grid_l[2] + k
+
+/**
+ * @brief location of fdm grid cell
+ * 
+ */
+enum Location{Outside, Inside, Boundary};
 
 /**
  * @brief run finite difference method for a given number of iterations
@@ -31,20 +44,20 @@ void FTCS(Subdomain *subdomain, int bc);
 /**
  * @brief compute interior points. same for both dirichlet and von neumann
  * @param subdomain the subdomain on which to compute finite differences
- * @param r row index
- * @param c column index
- * @param d depth index
+ * @param i x index
+ * @param j y index
+ * @param z index (zero if 2D)
  */
-void InteriorFD(Subdomain *subdomain, int r, int c, int d);
+void InteriorFD(Subdomain *subdomain, int i, int j, int k);
 
 /**
  * @brief compute boundary terms depending on whether dirichlet or von neuman is being used
  * @param subdomain the subdomain on which to compute finite differences
- * @param r row index
- * @param c column index
- * @param d depth index
+ * @param i x index
+ * @param j y index
+ * @param z index (zero if 2D)
  */
-void BoundaryFD(Subdomain *subdomain, int bc, int r, int c, int d);
+void BoundaryFD(Subdomain *subdomain, int bc, int i, int j, int k);
 
 /**
  * @brief apply boundary conditions to the domain
@@ -71,79 +84,18 @@ void DiscretizeSubdomain(Subdomain *subdomain);
  */
 void DetermineStepSizes(Subdomain *sd);
 
-/**
- * @brief macro to decide if the point is interior of the domain or a boundary point
- * @param sd subdomain
- * @param bc boundary conditions
- * @param r row index
- * @param c column index
- * @param d depth index
- */
-#define InteriorOrBoundary(sd, bc, r, c, d) switch (sd->shape_next[(d * sd->grid_l[1] + r) * sd->grid_l[0] + c])    \
-                                            {                                                                       \
-                                            case OUTSIDE:                                                           \
-                                                break;                                                              \
-                                            case INSIDE:                                                            \
-                                                InteriorFD(sd, c, r, d);                                            \
-                                                break;                                                              \
-                                            case BOUNDARY:                                                          \
-                                                BoundaryFD(sd, bc, c, r, d);                                        \
-                                                break;                                                              \
-                                            } 
+#define FDX(sd, i, j, k, off)   (1 - 2 * sd->mu_x) * sd->u_now[off + (i * sd->grid_l[1] + j) * sd->grid_l[2] + k]                             \
+                                + sd->mu_x * (sd->u_now[off + (i * sd->grid_l[1] + j + sd->grid_l[0]) * sd->grid_l[2] + k])                   \
+                                + sd->mu_x * (sd->u_now[off + (i * sd->grid_l[1] + j - sd->grid_l[0]) * sd->grid_l[2] + k])
 
-/**
- * @brief finite difference in x direction
- * @param sd subdomain
- * @param r row index
- * @param c column index
- * @param d depth index
- */
-#define FDX(sd, r, c, d) (1 - 2 * sd->mu_x) * sd->u_now[(d * sd->grid_l[1] + r) * sd->grid_l[0] + c]    \
-                         + sd->mu_x * (sd->u_now[(d * sd->grid_l[1] + r) * sd->grid_l[0] + c + 1]       \
-                                      + sd->u_now[(d * sd->grid_l[1] + r) * sd->grid_l[0] + c - 1])
+#define FDY(sd, i, j, k, off)   (1 - 2 * sd->mu_y) * sd->u_now[off + (i * sd->grid_l[1] + j) * sd->grid_l[2] + k]                             \
+                                + sd->mu_y * (sd->u_now[off + (i * sd->grid_l[1] + j + 1) * sd->grid_l[2] + k])                               \
+                                + sd->mu_y * (sd->u_now[off + (i * sd->grid_l[1] + j - 1) * sd->grid_l[2] + k])
 
-/**
- * @brief finite difference in y direction
- * @param sd subdomain
- * @param r row index
- * @param c column index
- * @param d depth index
- */
-#define FDY(sd, r, c, d) (1 - 2 * sd->mu_y) * sd->u_now[(d * sd->grid_l[1] + r) * sd->grid_l[0] + c]            \
-                         + sd->mu_y * (sd->u_now[(d * sd->grid_l[1] + r) * sd->grid_l[0] + c + sd->grid_l[0]]   \
-                                      + sd->u_now[(d * sd->grid_l[1] + r) * sd->grid_l[0] + c - sd->grid_l[0]])
+#define FDZ(sd, i, j, k, off)   (1 - 2 * sd->mu_z) * sd->u_now[off + (i * sd->grid_l[1] + j) * sd->grid_l[2] + k]                             \
+                                + sd->mu_z * (off + sd->u_now[(i * sd->grid_l[1] + j) * sd->grid_l[2] + k + sd->grid_l[0] * sd->grid_l[1]])   \
+                                + sd->mu_z * (off + sd->u_now[(i * sd->grid_l[1] + j) * sd->grid_l[2] + k - sd->grid_l[0] * sd->grid_l[1]])
 
-/**
- * @brief finite difference in z direction
- * @param sd subdomain
- * @param r row index
- * @param c column index
- * @param d depth index
- */
-#define FDZ(sd, r, c, d) (1 - 2 * sd->mu_z) * sd->u_now[(d * sd->grid_l[1] + r) * sd->grid_l[0] + c]                                \
-                         + sd->mu_z * (sd->u_now[(d * sd->grid_l[1] + r) * sd->grid_l[0] + c + sd->grid_l[0] * sd->grid_l[1]]       \
-                                      + sd->u_now[(d * sd->grid_l[1] + r) * sd->grid_l[0] + c - sd->grid_l[0] * sd->grid_l[1]])
-
-/**
- * @brief increment the rows, columns, and depth if necessary
- * @param r row index
- * @param c column index
- * @param d depth index
- */
-#define Increment(i, r, c, d)  c += 1; /* increment columns */                                              \
-                            if ((i % sd->grid_l[0]) == 0) /* reached end of a row */                        \
-                            {                                                                               \
-                                r += 1; /* increment row */                                                 \
-                                c = 0;  /* reset columns */                                                 \
-                            }                                                                               \
-                            if (sd->n_dims == 3)                                                            \
-                            {                                                                               \
-                                if ((i % sd->grid_l[0] * sd->grid_l[1]) == 0) /* reached end of plane */    \
-                                {                                                                           \
-                                    d += 1; /* increment depth */                                           \
-                                    c = 0;  /* reset columns */                                             \
-                                    r = 0;  /* reset rows */                                                \
-                                }                                                                           \
-                            }
+#define FD(sd, i, j, k, off) ((k) == 0 ? FDX(sd, i, j, k, off) + FDY(sd, i, j, k, off) : FDX(sd, i, j, k, off) + FDY(sd, i, j, k, off) + FDZ(sd, i, j, k, off))
 
 #endif // FDM_INCL

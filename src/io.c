@@ -28,10 +28,10 @@ void WriteData(Subdomain sd, int type)
     {
         FILE *fp = fopen("data/shape.csv", "a");
         if (fp == NULL) { printf("file not found\n"); exit(1); }
-            for (int i = 0; i < sd.grid_g[0] * sd.grid_g[1] * sd.grid_g[2]; i++)
-            {
-                fprintf(fp, "%d,", sd.shape_g[i]);
-            }
+        for (int i = 0; i < sd.grid_g[0] * sd.grid_g[1] * sd.grid_g[2]; i++)
+        {
+            fprintf(fp, "%d,", sd.shape_g[i]);
+        }
         fprintf(fp, "\n");
         fclose(fp);
     }
