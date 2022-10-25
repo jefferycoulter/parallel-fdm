@@ -171,16 +171,16 @@ void CollectSubdomainData(Subdomain *sd, int type, int time)
             {
                 case 0: // initial state
                 {
-                    MPI_Gather(sd->u_now, (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT, 
-                        sd->u_global, (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT,
-                        ROOT, MPI_COMM_WORLD);
+                    MPI_Gather(&((*sd).u_now[offset]), (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT, 
+                        &((*sd).u_global[global_id]), (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT,
+                        ROOT, sd->COMM_FDM);
                     break;
                 }
                 default: // all other time steps
                 {
-                    MPI_Gather(sd->u_next, (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT, 
-                        sd->u_global, (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT,
-                        ROOT, MPI_COMM_WORLD);
+                    MPI_Gather(&((*sd).u_next[offset]), (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT, 
+                        &((*sd).u_global[global_id]), (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT,
+                        ROOT, sd->COMM_FDM);
                     break;
                 }
             } // end switch time

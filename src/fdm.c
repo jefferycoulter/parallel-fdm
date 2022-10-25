@@ -11,10 +11,12 @@
 void ComputeFD(Subdomain *sd, int bc, int time_steps)
 {
     CollectSubdomainData(sd, FDM, 0);
-    WriteData(*sd, FDM);
+    if (sd->rank == ROOT) { WriteData(*sd, FDM); }
     for (int time = 1; time < time_steps+1; time ++)
     {
         ShareGhosts(sd, FDM);
+        MPI_Barrier(sd->COMM_FDM);
+
         FTCS(sd, bc); // forward-time central-space scheme
 
         CollectSubdomainData(sd, FDM, time);
@@ -84,9 +86,10 @@ void BoundaryFD(Subdomain *sd, int bc, int i, int j, int k)
 void CreateShapeArray(Subdomain *sd, float radius)
 {
     CoordShift(sd, radius);
-    ShareGhosts(sd, Shape);
 
+    ShareGhosts(sd, Shape);
     MPI_Barrier(sd->COMM_FDM);
+
     ApplyLaplaceFilter(sd);
 } // end void CreateShapeArray(Subdomain *sd, float radius)
 
@@ -181,7 +184,7 @@ void DiscretizeSubdomain(Subdomain *sd)
 
 void DetermineStepSizes(Subdomain *sd)
 {
-    float D = 5; // diffusion constant
+    float D = 3; // diffusion constant
     // step sizes
     sd->dx = (float)sd->dims_g[0] / (float)sd->grid_g[0];
     sd->dy = (float)sd->dims_g[1] / (float)sd->grid_g[1];
@@ -193,9 +196,9 @@ void DetermineStepSizes(Subdomain *sd)
     sd->mu_z = (sd->dt / pow(sd->dz, 2.0)) * D;
 
     // make sure step sizes are appropriate for stable results
-    if (sd->mu_x > 0.5) { fprintf(stderr, "Step sizes are too large. dx = %f, mu_x = %f > 0.5\n", sd->dx, sd->mu_x); exit(1); }
-    if (sd->mu_y > 0.5) { fprintf(stderr, "Step sizes are too large. dy = %f, mu_y = %f > 0.5\n", sd->dx, sd->mu_y); exit(1); }
-    if (sd->mu_z > 0.5) { fprintf(stderr, "Step sizes are too large. dz = %f, mu_z = %f > 0.5\n", sd->dx, sd->mu_z); exit(1); }
+    if (sd->mu_x > 0.125) { fprintf(stderr, "Step sizes are too large. dx = %.3f, mu_x = %.3f > 0.125\n", sd->dx, sd->mu_x); exit(1); }
+    if (sd->mu_y > 0.125) { fprintf(stderr, "Step sizes are too large. dy = %.3f, mu_y = %.3f > 0.125\n", sd->dx, sd->mu_y); exit(1); }
+    if (sd->mu_z > 0.125) { fprintf(stderr, "Step sizes are too large. dz = %.3f, mu_z = %.3f > 0.125\n", sd->dx, sd->mu_z); exit(1); }
 } // end void DetermineStepSizes(Subdomain sd)
 
 
