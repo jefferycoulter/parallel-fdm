@@ -193,12 +193,15 @@ void AllocateArraysFDM(Subdomain *sd)
     memset((*sd).u_next, 0, sizeof(float) * local_size);
     memset((*sd).u_now, 0, sizeof(float) * local_size);
 
-    // global shape array
-    (*sd).shape_g = (int*)malloc(sizeof(int) * global_size);
-    memset((*sd).shape_g, 0, sizeof(int) * global_size);
-    
-    (*sd).u_global = (float*)malloc(sizeof(float) * global_size);
-    memset((*sd).u_global, 0, sizeof(float) * global_size);
+    if (sd->rank == ROOT)
+    {
+        // global shape array
+        (*sd).shape_g = (int*)malloc(sizeof(int) * global_size);
+        memset((*sd).shape_g, 0, sizeof(int) * global_size);
+        
+        (*sd).u_global = (float*)malloc(sizeof(float) * global_size);
+        memset((*sd).u_global, 0, sizeof(float) * global_size);
+    }
 } // end void AllocateArraysFDM(Subdomain sd)
 
 void SubdomainCleanUp(Subdomain *sd)
