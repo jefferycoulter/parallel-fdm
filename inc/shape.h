@@ -91,7 +91,6 @@ void CoordShift(Subdomain *subdomain, float radius);
                                     }                                                                                         \
                                     break;                                                                                    \
                                 default: /* if the new value is not zero, then it is a boundary */                            \
-                                    fprintf(stdout, "boundary\n");                                                            \
                                     sd->shape_next[id] = Boundary;                                                            \
                                     break;                                                                                    \
                             }

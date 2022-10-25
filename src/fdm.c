@@ -93,6 +93,8 @@ void CreateShapeArray(Subdomain *sd, float radius)
 {
     CoordShift(sd, radius);
     ShareGhosts(sd, Shape);
+
+    MPI_Barrier(sd->COMM_FDM);
     ApplyLaplaceFilter(sd);
 } // end void CreateShapeArray(Subdomain *sd, float radius)
 
@@ -107,7 +109,7 @@ void ApplyLaplaceFilter(Subdomain *sd)
         {
             for (int k = 0; k < sd->grid_l[2]; k++)
             {
-                id = ID(sd, i, j, k) + offset;
+                id = offset + ID(sd, i, j, k);
                 sd->shape_next[id] = Laplace(sd, i, j, k, offset);
                 AssignValue(sd, id)
             } // end k loop

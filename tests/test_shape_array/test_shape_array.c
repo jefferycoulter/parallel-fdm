@@ -21,6 +21,7 @@ int main(int argc, char **argv)
     Subdomain *sd = CreateSubdomain(n_proc, rank);
 
     //CoordShift(sd, radius);
+    fprintf(stdout, "rank %d: neighbor up: %d \t neighbor down: %d\n", sd->rank, sd->neighbors[0], sd->neighbors[1]);
     CreateShapeArray(sd, radius);
 
     CollectSubdomainData(sd);

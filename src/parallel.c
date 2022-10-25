@@ -26,11 +26,11 @@ void GetInput(Subdomain *sd, int n_proc, int rank)
     sd->n_dims = 3;
     sd->dims_g[0] = 40;
     sd->dims_g[1] = 40;
-    sd->dims_g[2] = 40;
+    sd->dims_g[2] = 0;
 
     sd->grid_g[0] = 100;
     sd->grid_g[1] = 100;
-    sd->grid_g[2] = 100;
+    sd->grid_g[2] = 1;
     sd->dt = 0.005; // 50 milliseconds
 } // end void GetInput(Subdomain *sd, int n_proc, int rank)
 
@@ -161,13 +161,10 @@ void CollectSubdomainData(Subdomain *sd)
 {       
     int offset = sd->ghost_size;
     int global_id = ((sd->bounds_l[0] * sd->grid_g[1] + sd->bounds_l[2]) * sd->grid_g[2] + sd->bounds_l[4]);  
-    //MPI_Gather(&((*sd).shape_next[offset]), (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_INT, 
-      //         &((*sd).shape_g[global_id]), (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_INT,
-        //       ROOT, MPI_COMM_WORLD);
-
-    MPI_Gather(&((*sd).shape_now[offset]), (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_INT, 
+    
+    MPI_Gather(&((*sd).shape_next[offset]), (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_INT, 
                &((*sd).shape_g[global_id]), (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_INT,
-               ROOT, MPI_COMM_WORLD);
+               ROOT, sd->COMM_FDM);
 } // end void CollectSubdomainData(Subdomain *subdomain)
 
 void AllocateArraysFDM(Subdomain *sd)
@@ -220,10 +217,9 @@ void SubdomainCleanUp(Subdomain *sd)
 
 void CoordShift(Subdomain *sd, float r)
 {
-    //fprintf(stdout, "coord shift\n");
     int local_id; // the computations below are shifted to global coordinates, this converts back to local index
     int offset = sd->ghost_size;
-    fprintf(stdout, "offset is %d\n", offset);
+
     float r_shifted; // squared length of shifted position vector of a fdm grid_g cell
     for (int i = sd->bounds_l[0]; i < sd->bounds_l[1]; i ++)
     {
@@ -238,22 +234,14 @@ void CoordShift(Subdomain *sd, float r)
                 
                 if (r_shifted <= r*r) // inside of circle
                 {
-                    fprintf(stdout, "rank %d: r_shifted = %f\n", sd->rank, r_shifted);
-                    fprintf(stdout, "rank %d: sd->n_proc_dim[0] = %d\n", sd->rank, sd->n_proc_dim[0]);
-                    fprintf(stdout, "rank %d: sd->n_proc_dim[1] = %d\n", sd->rank, sd->n_proc_dim[1]);
-                    fprintf(stdout, "coordinates (%d, %d, %d)\n", i, j, k);
-                    fprintf(stdout, "rank %d: sd->coords[0] = %d\n", sd->rank, sd->coords[0]);
-                    fprintf(stdout, "rank %d: sd->coords[1] = %d\n", sd->rank, sd->coords[1]);
-                    fprintf(stdout, "rank %d: x bounds [%d, %d]\n", sd->rank, sd->bounds_l[0], sd->bounds_l[1]);
-                    fprintf(stdout, "rank %d: y bounds [%d, %d]\n", sd->rank, sd->bounds_l[2], sd->bounds_l[3]);
                     sd->shape_now[local_id] = 1;
                 }
                 else // outside of circle
                 {
                     sd->shape_now[local_id] = 0;
                 }
-            } // end j loop
-        } // end i loop
-    }
+            } // end k loop
+        } // end j loop
+    } // end i loop
     MPI_Barrier(MPI_COMM_WORLD);
 } // end void CoordShift(Subdomain sd, float r)
