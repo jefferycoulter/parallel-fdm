@@ -2,7 +2,6 @@
 #define FDM_INCL
 
 #include "parallel.h"
-#include <math.h>
 
 /**
  * @brief convert point in 3D space to a corresponding index in linear memory
