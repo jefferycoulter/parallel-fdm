@@ -10,23 +10,15 @@
 
 void ComputeFD(Subdomain *sd, int bc, int time_steps)
 {
-    MPI_Gather(sd->u_now, (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT, 
-                   sd->u_global, (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT,
-                   ROOT, MPI_COMM_WORLD);
-    int t = 0;
-    WriteData(*sd, FDM); // save initial conditions
-    for (int t = 1; t < time_steps+1; t ++)
+    CollectSubdomainData(sd, FDM, 0);
+    WriteData(*sd, FDM);
+    for (int time = 1; time < time_steps+1; time ++)
     {
+        ShareGhosts(sd, FDM);
         FTCS(sd, bc); // forward-time central-space scheme
 
-        // send the local computations to ROOT process
-        MPI_Gather(sd->u_next, (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT, 
-                   sd->u_global, (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT,
-                   ROOT, MPI_COMM_WORLD);
-        if (sd->rank == ROOT)
-        {
-            WriteData(*sd, FDM); // save each iteration
-        }
+        CollectSubdomainData(sd, FDM, time);
+        if (sd->rank == ROOT) { WriteData(*sd, FDM); }
     }
 } // end void ComputeFD(Subdomain *sd, int bc, int time_steps)
 
@@ -67,7 +59,7 @@ void InteriorFD(Subdomain *sd, int i, int j, int k)
 {
     int offset = sd->ghost_size;
     int id = ID(sd, i, j, k) + offset;
-    sd->u_next[id] = FD(sd, i, j, k, offset);
+    sd->u_next[id] = FD(sd, id, k);
 } // end void InteriorFD(Subdomain *sd, int i, int j, int k)
 
 void BoundaryFD(Subdomain *sd, int bc, int i, int j, int k)
@@ -110,7 +102,7 @@ void ApplyLaplaceFilter(Subdomain *sd)
             for (int k = 0; k < sd->grid_l[2]; k++)
             {
                 id = offset + ID(sd, i, j, k);
-                sd->shape_next[id] = Laplace(sd, i, j, k, offset);
+                sd->shape_next[id] = Laplace(sd, id, k);
                 AssignValue(sd, id)
             } // end k loop
         } // end j loop

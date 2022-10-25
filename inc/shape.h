@@ -34,9 +34,9 @@ void CoordShift(Subdomain *subdomain, float radius);
  * @param j y index
  * @param k z index
  */
-#define LX(sd, i, j, k, off)    -2 * (*sd).shape_now[off + ((i * (*sd).grid_l[1]) + j) * (*sd).grid_l[2] + k]                   \
-                                + (*sd).shape_now[off + (i * (*sd).grid_l[1] + j) * (*sd).grid_l[2] + k + (*sd).grid_l[1]]    \
-                                + (*sd).shape_now[off + (i * (*sd).grid_l[1] + j) * (*sd).grid_l[2] + k - (*sd).grid_l[1]]
+#define LX(sd, id)  -2 * (*sd).shape_now[id]                   \
+                    + (*sd).shape_now[id + (*sd).grid_l[1]]    \
+                    + (*sd).shape_now[id - (*sd).grid_l[1]]
 
 /**
  * @brief laplace filter in y direction
@@ -45,9 +45,9 @@ void CoordShift(Subdomain *subdomain, float radius);
  * @param j y index
  * @param k z index
  */
-#define LY(sd, i, j, k, off)    -2  * (*sd).shape_now[off + ((i * (*sd).grid_l[1]) + j) * (*sd).grid_l[2] + k]  \
-                                + (*sd).shape_now[off + (i * (*sd).grid_l[1] + j) * (*sd).grid_l[2] + k + 1]    \
-                                + (*sd).shape_now[off + (i * (*sd).grid_l[1] + j) * (*sd).grid_l[2] + k - 1]
+#define LY(sd, id)  -2  * (*sd).shape_now[id]   \
+                    + (*sd).shape_now[id + 1]   \
+                    + (*sd).shape_now[id - 1]
 
 /**
  * @brief laplace filter in z direction
@@ -56,9 +56,9 @@ void CoordShift(Subdomain *subdomain, float radius);
  * @param j y index
  * @param k z index
  */
-#define LZ(sd, i, j, k, off)    -2 * (*sd).shape_now[off + ((i * (*sd).grid_l[1]) + j) * (*sd).grid_l[2] + k]                                     \
-                                + (*sd).shape_now[off + (i * (*sd).grid_l[1] + j) * (*sd).grid_l[2] + k + ((*sd).grid_l[1] * (*sd).grid_l[2])]    \
-                                + (*sd).shape_now[off + (i * (*sd).grid_l[1] + j) * (*sd).grid_l[2] + k - ((*sd).grid_l[1] * (*sd).grid_l[2])] 
+#define LZ(sd, id)  -2 * (*sd).shape_now[id]                                        \
+                    + (*sd).shape_now[id + ((*sd).grid_l[1] * (*sd).grid_l[2])]     \
+                    + (*sd).shape_now[id - ((*sd).grid_l[1] * (*sd).grid_l[2])] 
 
 /**
  * @brief apply the laplace filter at point (i, j, k)
@@ -68,7 +68,7 @@ void CoordShift(Subdomain *subdomain, float radius);
  * @param k z index
  * @param off offset due to ghost cell
  */
-#define Laplace(sd, i, j, k, off) ((k) == 0 ? LX(sd, i, j, k, off) + LY(sd, i, j, k, off) : LX(sd, i, j, k, off) + LY(sd, i, j, k, off) + LZ(sd, i, j, k, off))
+#define Laplace(sd, id, k) ((k) == 0 ? LX(sd, id) + LY(sd, id) : LX(sd, id) + LY(sd, id) + LZ(sd, id))
 
 /**
  * @brief after performing the laplace operation, assign values to the boundary, the interior domain, and the exterior domain.

@@ -157,16 +157,41 @@ void DetermineSubdomainGridBounds(Subdomain *sd)
     }
 } // end void DetermineSubdomainGridBounds(Subdomain *sd)
 
-void CollectSubdomainData(Subdomain *sd)
+void CollectSubdomainData(Subdomain *sd, int type, int time)
 {       
     int offset = sd->ghost_size;
     int global_id = ((((*sd).bounds_l[0] * (*sd).grid_g[1]) + (*sd).bounds_l[2]) * (*sd).grid_g[2] + (*sd).bounds_l[4]);  
     
     MPI_Barrier(sd->COMM_FDM);
 
-    MPI_Gather(&((*sd).shape_next[offset]), (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_INT, 
-               &((*sd).shape_g[global_id]), (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_INT,
-               ROOT, sd->COMM_FDM);
+    switch (type)
+    {
+        case FDM:
+            switch (time)
+            {
+                case 0: // initial state
+                {
+                    MPI_Gather(sd->u_now, (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT, 
+                        sd->u_global, (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT,
+                        ROOT, MPI_COMM_WORLD);
+                    break;
+                }
+                default: // all other time steps
+                {
+                    MPI_Gather(sd->u_next, (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT, 
+                        sd->u_global, (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT,
+                        ROOT, MPI_COMM_WORLD);
+                    break;
+                }
+            } // end switch time
+        case Shape:
+        {
+            MPI_Gather(&((*sd).shape_next[offset]), (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_INT, 
+                &((*sd).shape_g[global_id]), (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_INT,
+                ROOT, sd->COMM_FDM);
+            break;
+        }
+    } // end switch type
 } // end void CollectSubdomainData(Subdomain *subdomain)
 
 void AllocateArraysFDM(Subdomain *sd)

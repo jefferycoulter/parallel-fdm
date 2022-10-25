@@ -95,8 +95,10 @@ void AllocateArraysFDM(Subdomain *subdomain);
 /**
  * @brief collect local data to root process for writing to a file
  * @param subdomain the subdomain to collect from
+ * @param type FDM or Shape. specifies which arrays should be collected
+ * @param time time step at which data is collected
  */
-void CollectSubdomainData(Subdomain *subdomain);
+void CollectSubdomainData(Subdomain *subdomain, int type, int time);
 
 /**
  * @brief free memory on the process
