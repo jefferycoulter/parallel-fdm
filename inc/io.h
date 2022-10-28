@@ -9,7 +9,7 @@ enum DataType{FDM, Shape};
 /**
  * @brief read user input and assign to variables
  */
-void ReadInput();
+void ReadInput(Subdomain *subdomain);
 
 /**
  * @brief write each entire iteration result to a single line

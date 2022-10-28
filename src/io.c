@@ -4,9 +4,19 @@
 #include <stdlib.h>
 #include <string.h>
 
-void ReadInput()
+void ReadInput(Subdomain *sd)
 {
-
+    FILE *fp = fopen("config", "r");
+    if (fp == NULL) { printf("file not found\n"); exit(1); }
+    fscanf(fp, "ndims = %d\n", &(*sd).n_dims);
+    fscanf(fp, "dimX = %d\n", &(*sd).dims_g[0]);
+    fscanf(fp, "dimY = %d\n", &(*sd).dims_g[1]);
+    fscanf(fp, "dimZ = %d\n", &(*sd).dims_g[2]);
+    fscanf(fp, "Nx = %d\n", &(*sd).grid_g[0]);
+    fscanf(fp, "Ny = %d\n", &(*sd).grid_g[1]);
+    fscanf(fp, "Nz = %d\n", &(*sd).grid_g[2]);
+    fscanf(fp, "timestep = %f\n", &(*sd).dt);
+    fclose(fp);
 }
 
 void WriteData(Subdomain sd, int type)

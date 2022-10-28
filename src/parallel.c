@@ -10,7 +10,14 @@
 Subdomain *CreateSubdomain(int nproc, int rank)
 {   
     Subdomain *subdomain = malloc(sizeof(Subdomain));
-    GetInput(subdomain, nproc, rank);
+    LoadParameters(subdomain, nproc, rank);
+    for (int n = 0; n < subdomain->n_dims; n++)
+    {
+        if ((subdomain->grid_g[n] % nproc) == 0)
+        {
+            ResizeDomain(subdomain, n);
+        }
+    }
     SplitProcessorsAlongDims(subdomain);
     GetNeighbors(subdomain);
     DetermineSubdomainGridBounds(subdomain);
@@ -19,20 +26,20 @@ Subdomain *CreateSubdomain(int nproc, int rank)
     return subdomain;
 } // end Subdomain *CreateSubdomain(int nproc, int rank)
 
-void GetInput(Subdomain *sd, int n_proc, int rank)
+void LoadParameters(Subdomain *sd, int n_proc, int rank)
 {
     sd->n_proc = n_proc;
     sd->rank = rank;
-    sd->n_dims = 3;
-    sd->dims_g[0] = 40;
-    sd->dims_g[1] = 40;
-    sd->dims_g[2] = 40;
-
-    sd->grid_g[0] = 100;
-    sd->grid_g[1] = 100;
-    sd->grid_g[2] = 100;
-    sd->dt = 0.005; // 50 milliseconds
+    
+    ReadInput(sd);
+    
 } // end void GetInput(Subdomain *sd, int n_proc, int rank)
+
+void ResizeDomain(Subdomain *sd, int dim)
+{
+    int remainder = sd->grid_g[dim] % sd->n_proc;
+    sd->grid_g[dim] = sd->grid_g[dim] - remainder;
+} // end void ResizeDomain(Subdomain *sd, int dim)
 
 void SplitProcessorsAlongDims(Subdomain *sd)
 {

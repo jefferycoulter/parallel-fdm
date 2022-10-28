@@ -59,7 +59,16 @@ Subdomain *CreateSubdomain(int nproc, int rank);
  * @param nproc number of processors being used
  * @param rank rank of the processor that the subdomain belongs to
  */
-void GetInput(Subdomain *subdomain, int nproc, int rank);
+void LoadParameters(Subdomain *subdomain, int nproc, int rank);
+
+
+/**
+ * @brief if the given global dimensions of the domain aren't divisible by the number of processors
+ * then slightly adjust them
+ * @param subdomain
+ * @param dim dimension which should be resized 
+ */
+void ResizeDomain(Subdomain *subdomain, int dim);
 
 /**
  * @brief divide processors amongst the spatial dimensions in an optimal way
