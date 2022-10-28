@@ -1,0 +1,8 @@
+ndims = 3
+dimX = 40
+dimY = 40
+dimZ = 40
+Nx = 200
+Ny = 200
+Nz = 200
+timestep = 0.005
