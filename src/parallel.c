@@ -47,8 +47,8 @@ void SplitProcessorsAlongDims(Subdomain *sd)
     if (sd->n_dims == 2)
     {
         // split along y direction
-        sd->n_proc_dim[0] = 1;
-        sd->n_proc_dim[1] = sd->n_proc;
+        sd->n_proc_dim[0] = sd->n_proc;
+        sd->n_proc_dim[1] = 1;
     }
     else if (sd->n_dims == 3)
     {
@@ -95,7 +95,15 @@ void ShareGhosts(Subdomain *sd, int type)
         MPI_Sendrecv(&((*sd).u_next[id_send_up]), (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT, (*sd).neighbors[Down], Up, 
                     &((*sd).u_next[id_recv_up]), (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT, (*sd).neighbors[Up], Up, 
                     sd->COMM_FDM, &status);
+        // send the bottom slice of a subdomain to the subdomain below it
+        MPI_Sendrecv(&((*sd).u_next[id_send_down]), (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT, (*sd).neighbors[Up], Down, 
+                    &((*sd).u_next[id_recv_down]), (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT, (*sd).neighbors[Down], Down, 
+                    sd->COMM_FDM, &status);
 
+        // send to top slice of a subdomain to the subdomain above it
+        MPI_Sendrecv(&((*sd).u_now[id_send_up]), (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT, (*sd).neighbors[Down], Up, 
+                    &((*sd).u_now[id_recv_up]), (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT, (*sd).neighbors[Up], Up, 
+                    sd->COMM_FDM, &status);
         // send the bottom slice of a subdomain to the subdomain below it
         MPI_Sendrecv(&((*sd).u_now[id_send_down]), (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT, (*sd).neighbors[Up], Down, 
                     &((*sd).u_now[id_recv_down]), (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT, (*sd).neighbors[Down], Down, 
@@ -107,7 +115,15 @@ void ShareGhosts(Subdomain *sd, int type)
         MPI_Sendrecv(&((*sd).shape_next[id_send_up]), (*sd).grid_l[1] * (*sd).grid_l[2], MPI_INT, (*sd).neighbors[Down], Up, 
                     &((*sd).shape_next[id_recv_up]), (*sd).grid_l[1] * (*sd).grid_l[2], MPI_INT, (*sd).neighbors[Up], Up, 
                     sd->COMM_FDM, &status);
+        // send the bottom ghost of a subdomain to the subdomain below it
+        MPI_Sendrecv(&((*sd).shape_next[id_send_down]), (*sd).grid_l[1] * (*sd).grid_l[2], MPI_INT, (*sd).neighbors[Up], Down, 
+                    &((*sd).shape_next[id_recv_down]), (*sd).grid_l[1] * (*sd).grid_l[2], MPI_INT, (*sd).neighbors[Down], Down, 
+                    sd->COMM_FDM, &status);
 
+        // send to top ghost of a subdomain to the subdomain above it
+        MPI_Sendrecv(&((*sd).shape_now[id_send_up]), (*sd).grid_l[1] * (*sd).grid_l[2], MPI_INT, (*sd).neighbors[Down], Up, 
+                    &((*sd).shape_now[id_recv_up]), (*sd).grid_l[1] * (*sd).grid_l[2], MPI_INT, (*sd).neighbors[Up], Up, 
+                    sd->COMM_FDM, &status);
         // send the bottom ghost of a subdomain to the subdomain below it
         MPI_Sendrecv(&((*sd).shape_now[id_send_down]), (*sd).grid_l[1] * (*sd).grid_l[2], MPI_INT, (*sd).neighbors[Up], Down, 
                     &((*sd).shape_now[id_recv_down]), (*sd).grid_l[1] * (*sd).grid_l[2], MPI_INT, (*sd).neighbors[Down], Down, 
