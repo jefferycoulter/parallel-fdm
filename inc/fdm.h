@@ -10,7 +10,7 @@
  * @param j y index
  * @param k z index
  */
-#define ID(sd, i, j, k) (i * sd->grid_l[1] + j) * sd->grid_l[2] + k
+#define ID(sd, i, j, k) (i * (*sd).grid_l[1] + j) * (*sd).grid_l[2] + k
 
 /**
  * @brief boundary conditions that can be used for fdm. outside region of interest (i.e. no FDM computations here),
@@ -69,11 +69,6 @@ void SetBoundaryConditions(Subdomain *subdomain);
  */
 void SetInitialConditions(Subdomain *subdomain);
 
-/**
- * @brief discretize the process's domain (a subdomain)
- * @param subdomain the subdomain to discretize
- */
-void DiscretizeSubdomain(Subdomain *subdomain);
 
 /**
  * @brief determine the step sizes along each dimension from global size and the
@@ -87,27 +82,27 @@ void DetermineStepSizes(Subdomain *sd);
  * @param sd subdomain
  * @param id
  */
-#define FDX(sd, id)     (1 - 2 * sd->mu_x) * sd->u_now[id]                \
-                        + sd->mu_x * (sd->u_now[id + (*sd).grid_l[1]])    \
-                        + sd->mu_x * (sd->u_now[id - (*sd).grid_l[1]])
+#define FDX(sd, id)     (1 - 2 * (*sd).mu_x) * (*sd).u_now[id]                \
+                        + (*sd).mu_x * ((*sd).u_now[id + (*sd).grid_l[1]])    \
+                        + (*sd).mu_x * ((*sd).u_now[id - (*sd).grid_l[1]])
 
 /**
  * @brief finite difference in y direction
  * @param sd subdomain
  * @param id
  */
-#define FDY(sd, id)     (1 - 2 * sd->mu_y) * sd->u_now[id]    \
-                        + sd->mu_y * (sd->u_now[id + 1])      \
-                        + sd->mu_y * (sd->u_now[id - 1])
+#define FDY(sd, id)     - 2 * (*sd).mu_y * (*sd).u_now[id]    \
+                        + (*sd).mu_y * ((*sd).u_now[id + 1])      \
+                        + (*sd).mu_y * ((*sd).u_now[id - 1])
 
 /**
  * @brief finite difference in z direction
  * @param sd subdomain
  * @param id
  */
-#define FDZ(sd, id)     (1 - 2 * sd->mu_z) * sd->u_now[id]                                  \
-                        + sd->mu_z * (sd->u_now[id + ((*sd).grid_l[1] * (*sd).grid_l[2])])   \
-                        + sd->mu_z * (sd->u_now[id - ((*sd).grid_l[1] * (*sd).grid_l[2])])
+#define FDZ(sd, id)     - 2 * (*sd).mu_z * (*sd).u_now[id]                                  \
+                        + (*sd).mu_z * ((*sd).u_now[id + ((*sd).grid_l[1] * (*sd).grid_l[2])])   \
+                        + (*sd).mu_z * ((*sd).u_now[id - ((*sd).grid_l[1] * (*sd).grid_l[2])])
 
 /**
  * @brief apply finite difference at point (i, j, k)

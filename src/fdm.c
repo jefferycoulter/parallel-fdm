@@ -20,7 +20,7 @@ void ComputeFD(Subdomain *sd, int bc, int time_steps)
         FTCS(sd, bc); // forward-time central-space scheme
 
         CollectSubdomainData(sd, FDM, time);
-        if (sd->rank == ROOT) { WriteData(*sd, FDM); }
+        if ((time % 50 == 0) && (sd->rank == ROOT)) { WriteData(*sd, FDM); }
     }
 } // end void ComputeFD(Subdomain *sd, int bc, int time_steps)
 
@@ -29,13 +29,13 @@ void FTCS(Subdomain *sd, int bc)
     int id;
     int offset = sd->ghost_size;
 
-    for (int i = 0; i < sd->grid_l[0]; i ++)
+    for (int i = 0; i < sd->grid_l[0]; i++)
     {
         for (int j = 0; j < sd->grid_l[1]; j++)
         {
             for (int k = 0; k < sd->grid_l[2]; k++) // for 2d case grid_l[2] = 1, k will always be zero
             {
-                id = ID(sd, i, j, k) + offset;
+                id = offset + ID(sd, i, j, k);
                 switch (sd->shape_next[id])
                     {
                     case Outside:
@@ -60,7 +60,7 @@ void FTCS(Subdomain *sd, int bc)
 void InteriorFD(Subdomain *sd, int i, int j, int k)
 {
     int offset = sd->ghost_size;
-    int id = ID(sd, i, j, k) + offset;
+    int id = offset + ID(sd, i, j, k);
     sd->u_next[id] = FD(sd, id, k);
 } // end void InteriorFD(Subdomain *sd, int i, int j, int k)
 
@@ -125,7 +125,7 @@ void SetBoundaryConditions(Subdomain *sd)
         {
             for (int k = 0; k < sd->grid_l[2]; k ++)
             {
-                id = ID(sd, i, j, k) + offset;
+                id = offset + ID(sd, i, j, k);
                 switch (sd->shape_next[id])
                 {
                     case Boundary:
@@ -152,9 +152,9 @@ void SetInitialConditions(Subdomain *sd)
         {
             for (int k = 0; k < sd->grid_l[2]; k++)
             {
+                id = offset + ID(sd, i, j, k);
                 switch (sd->shape_next[id])
                 {
-                    id = ID(sd, i, j, k) + offset;
                     case Inside:
                         sd->u_now[id] = ic;
                         break;
@@ -166,25 +166,9 @@ void SetInitialConditions(Subdomain *sd)
     } // end i loop
 } // end void SetInitialConditions(Subdomain sd)
 
-void DiscretizeSubdomain(Subdomain *sd)
-{
-    if(sd->grid_g[2] == 0)
-    {
-        sd->grid_g[0] = sd->dims_g[0] / sd->dx;
-        sd->grid_g[1] = sd->dims_g[1] / sd->dy;
-        sd->grid_g[2] = 0;
-    }
-    else
-    {
-        sd->grid_g[0] = sd->dims_g[0] / sd->dx;
-        sd->grid_g[1] = sd->dims_g[1] / sd->dy;
-        sd->grid_g[2] = sd->dims_g[2] / sd->dz;
-    }
-} // end void DiscretizeSubdomain(Subdomain sd)
-
 void DetermineStepSizes(Subdomain *sd)
 {
-    float D = 3; // diffusion constant
+    float D = 1; // diffusion constant
     // step sizes
     sd->dx = (float)sd->dims_g[0] / (float)sd->grid_g[0];
     sd->dy = (float)sd->dims_g[1] / (float)sd->grid_g[1];
@@ -194,6 +178,8 @@ void DetermineStepSizes(Subdomain *sd)
     sd->mu_x = (sd->dt / pow(sd->dx, 2.0)) * D;
     sd->mu_y = (sd->dt / pow(sd->dy, 2.0)) * D;
     sd->mu_z = (sd->dt / pow(sd->dz, 2.0)) * D;
+
+    //fprintf(stdout, "mu_x[0] = %f\n", sd->mu_x);
 
     // make sure step sizes are appropriate for stable results
     if (sd->mu_x > 0.125) { fprintf(stderr, "Step sizes are too large. dx = %.3f, mu_x = %.3f > 0.125\n", sd->dx, sd->mu_x); exit(1); }
