@@ -42,20 +42,16 @@ void FTCS(Subdomain *subdomain, int bc);
 /**
  * @brief compute interior points. same for both dirichlet and von neumann
  * @param subdomain the subdomain on which to compute finite differences
- * @param i x index
- * @param j y index
- * @param z index (zero if 2D)
+ * @param id
  */
-void InteriorFD(Subdomain *subdomain, int i, int j, int k);
+void InteriorFD(Subdomain *subdomain, int id);
 
 /**
  * @brief compute boundary terms depending on whether dirichlet or von neuman is being used
  * @param subdomain the subdomain on which to compute finite differences
- * @param i x index
- * @param j y index
- * @param z index (zero if 2D)
+ * @param id
  */
-void BoundaryFD(Subdomain *subdomain, int bc, int i, int j, int k);
+void BoundaryFD(Subdomain *subdomain, int bc, int id);
 
 /**
  * @brief apply boundary conditions to the domain
@@ -91,8 +87,8 @@ void DetermineStepSizes(Subdomain *sd);
  * @param sd subdomain
  * @param id
  */
-#define FDY(sd, id)     - 2 * (*sd).mu_y * (*sd).u_now[id]    \
-                        + (*sd).mu_y * ((*sd).u_now[id + 1])      \
+#define FDY(sd, id)     - 2 * (*sd).mu_y * (*sd).u_now[id]      \
+                        + (*sd).mu_y * ((*sd).u_now[id + 1])    \
                         + (*sd).mu_y * ((*sd).u_now[id - 1])
 
 /**
@@ -100,8 +96,8 @@ void DetermineStepSizes(Subdomain *sd);
  * @param sd subdomain
  * @param id
  */
-#define FDZ(sd, id)     - 2 * (*sd).mu_z * (*sd).u_now[id]                                  \
-                        + (*sd).mu_z * ((*sd).u_now[id + ((*sd).grid_l[1] * (*sd).grid_l[2])])   \
+#define FDZ(sd, id)     - 2 * (*sd).mu_z * (*sd).u_now[id]                                      \
+                        + (*sd).mu_z * ((*sd).u_now[id + ((*sd).grid_l[1] * (*sd).grid_l[2])])  \
                         + (*sd).mu_z * ((*sd).u_now[id - ((*sd).grid_l[1] * (*sd).grid_l[2])])
 
 /**
@@ -109,6 +105,6 @@ void DetermineStepSizes(Subdomain *sd);
  * @param sd subdomain
  * @param id
  */
-#define FD(sd, id, k) ((k) == 0 ? FDX(sd, id) + FDY(sd, id) : FDX(sd, id) + FDY(sd, id) + FDZ(sd, id))
+#define FD(sd, id) ((sd->n_dims) == 2 ? FDX(sd, id) + FDY(sd, id) : FDX(sd, id) + FDY(sd, id) + FDZ(sd, id))
 
 #endif // FDM_INCL

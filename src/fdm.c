@@ -12,15 +12,16 @@ void ComputeFD(Subdomain *sd, int bc, int time_steps)
 {
     CollectSubdomainData(sd, FDM, 0);
     if (sd->rank == ROOT) { WriteData(*sd, FDM); }
+    ShareGhosts(sd, FDM);
     for (int time = 1; time < time_steps+1; time ++)
     {
-        ShareGhosts(sd, FDM);
-        MPI_Barrier(sd->COMM_FDM);
-
         FTCS(sd, bc); // forward-time central-space scheme
-
-        CollectSubdomainData(sd, FDM, time);
-        if ((time % 50 == 0) && (sd->rank == ROOT)) { WriteData(*sd, FDM); }
+        ShareGhosts(sd, FDM);
+        if (time % 50 == 0)
+        {
+            CollectSubdomainData(sd, FDM, time);
+            if (sd->rank == ROOT) { WriteData(*sd, FDM); }
+        }
     }
 } // end void ComputeFD(Subdomain *sd, int bc, int time_steps)
 
@@ -41,10 +42,10 @@ void FTCS(Subdomain *sd, int bc)
                     case Outside:
                         break;
                     case Inside:
-                        InteriorFD(sd, i, j, k);
+                        InteriorFD(sd, id);
                         break;
                     case Boundary:
-                        BoundaryFD(sd, bc, i, j, k);
+                        BoundaryFD(sd, bc, id);
                         break;
                     } // end switch
             } // end k loop
@@ -54,24 +55,21 @@ void FTCS(Subdomain *sd, int bc)
     // copy new data to old data array for next iteration
     // note:
     // sd.grid_l[2] = 1 for 2D case, so multiplying it here doesn't matter if the problem is 2D
-    memcpy(sd->u_now, sd->u_next, (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2] * sizeof((*sd->u_now)));
+    memcpy(sd->u_now, sd->u_next, sizeof(float) * ((*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2] + (2 * (*sd).ghost_size)));
 } // end void FTCS(Subdomain *sd, int bc)
 
-void InteriorFD(Subdomain *sd, int i, int j, int k)
+void InteriorFD(Subdomain *sd, int id)
 {
-    int offset = sd->ghost_size;
-    int id = offset + ID(sd, i, j, k);
-    sd->u_next[id] = FD(sd, id, k);
-} // end void InteriorFD(Subdomain *sd, int i, int j, int k)
+    sd->u_next[id] = FD(sd, id);
+} // end void InteriorFD(Subdomain *sd, int id)
 
-void BoundaryFD(Subdomain *sd, int bc, int i, int j, int k)
+void BoundaryFD(Subdomain *sd, int bc, int id)
 {
     switch (bc)
     {
         case Dirichlet:
         {
-            //SetBoundaryConditions(sd);
-            // don't need to do anything assuming boundaries are constant
+            sd->u_next[id] = sd->u_now[id];
             break;
         } // end case Dirichlet
         case VonNeumann:
@@ -80,7 +78,7 @@ void BoundaryFD(Subdomain *sd, int bc, int i, int j, int k)
             break;
         } // end case VonNeumann
     } // end switch
-} // end void BoundaryFD(Subdomain *sd, int bc, int i, int j, int k)
+} // end void BoundaryFD(Subdomain *sd, int bc, int id)
 
 
 void CreateShapeArray(Subdomain *sd, float radius)
@@ -91,6 +89,7 @@ void CreateShapeArray(Subdomain *sd, float radius)
     MPI_Barrier(sd->COMM_FDM);
 
     ApplyLaplaceFilter(sd);
+    ShareGhosts(sd, Shape);
 } // end void CreateShapeArray(Subdomain *sd, float radius)
 
 void ApplyLaplaceFilter(Subdomain *sd)
@@ -105,7 +104,7 @@ void ApplyLaplaceFilter(Subdomain *sd)
             for (int k = 0; k < sd->grid_l[2]; k++)
             {
                 id = offset + ID(sd, i, j, k);
-                sd->shape_next[id] = Laplace(sd, id, k);
+                sd->shape_next[id] = Laplace(sd, id);
                 AssignValue(sd, id)
             } // end k loop
         } // end j loop
@@ -168,7 +167,7 @@ void SetInitialConditions(Subdomain *sd)
 
 void DetermineStepSizes(Subdomain *sd)
 {
-    float D = 1; // diffusion constant
+    float D = 3; // diffusion constant
     // step sizes
     sd->dx = (float)sd->dims_g[0] / (float)sd->grid_g[0];
     sd->dy = (float)sd->dims_g[1] / (float)sd->grid_g[1];
