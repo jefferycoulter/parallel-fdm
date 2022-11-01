@@ -15,11 +15,13 @@ add_executable(${PROJECT_NAME} src/main.c
     inc/fdm.h
     inc/io.h
     inc/parallel.h
+    inc/reaction.h
     inc/shape.h
     
     src/fdm.c
     src/io.c
     src/parallel.c
+    src/reaction.c
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${MPI_C_INCLUDE_DIRS} inc)

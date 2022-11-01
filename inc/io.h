@@ -2,7 +2,6 @@
 #define IO_INCL
 
 #include "parallel.h"
-#include <stdio.h>
 
 enum DataType{FDM, Shape};
 

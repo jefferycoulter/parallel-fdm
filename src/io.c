@@ -1,4 +1,5 @@
 #include "io.h"
+#include "reaction.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,6 +17,7 @@ void ReadInput(Subdomain *sd)
     fscanf(fp, "Ny = %d\n", &(*sd).grid_g[1]);
     fscanf(fp, "Nz = %d\n", &(*sd).grid_g[2]);
     fscanf(fp, "timestep = %f\n", &(*sd).dt);
+    CreateReactionNetwork(sd->network, fp);
     fclose(fp);
 }
 

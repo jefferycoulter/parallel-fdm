@@ -1,2 +1,4 @@
+add_subdirectory(test_parse_reaction)
 add_subdirectory(test_process_distribution)
 add_subdirectory(test_shape_array)
+add_subdirectory(test_speedup)

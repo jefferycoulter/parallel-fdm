@@ -1,6 +1,8 @@
 #ifndef PARALLEL_INCL
 #define PARALLEL_INCL
 
+#include "reaction.h"
+
 #include <mpi.h>
 
 #define ROOT 0 // root process
@@ -35,6 +37,8 @@ typedef struct
     float mu_x, mu_y, mu_z; // stability factor, mu_i = dt / di**2 where i = x, y, z
 
     int ghost_size; // size in memory of ghost cells
+
+    ReactionNetwork *network;
 
     int *shape_now; // shape array local to a process. used for determining fdm boundaries in case of irregular geometry
     int *shape_next;
