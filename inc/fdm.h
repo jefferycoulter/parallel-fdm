@@ -42,14 +42,14 @@ void FTCS(Subdomain *subdomain, int bc);
 /**
  * @brief compute interior points. same for both dirichlet and von neumann
  * @param subdomain the subdomain on which to compute finite differences
- * @param id
+ * @param id index of grid point
  */
 void InteriorFD(Subdomain *subdomain, int id);
 
 /**
  * @brief compute boundary terms depending on whether dirichlet or von neuman is being used
  * @param subdomain the subdomain on which to compute finite differences
- * @param id
+ * @param id index of grid point
  */
 void BoundaryFD(Subdomain *subdomain, int bc, int id);
 
@@ -65,7 +65,6 @@ void SetBoundaryConditions(Subdomain *subdomain);
  */
 void SetInitialConditions(Subdomain *subdomain);
 
-
 /**
  * @brief determine the step sizes along each dimension from global size and the
  * number of finite difference grid_g cells
@@ -76,7 +75,7 @@ void DetermineStepSizes(Subdomain *sd);
 /**
  * @brief finite difference in x direction
  * @param sd subdomain
- * @param id
+ * @param id index of grid point
  */
 #define FDX(sd, id)     (1 - 2 * (*sd).mu_x) * (*sd).u_now[id]                \
                         + (*sd).mu_x * ((*sd).u_now[id + (*sd).grid_l[1]])    \
@@ -85,7 +84,7 @@ void DetermineStepSizes(Subdomain *sd);
 /**
  * @brief finite difference in y direction
  * @param sd subdomain
- * @param id
+ * @param id index of grid point
  */
 #define FDY(sd, id)     - 2 * (*sd).mu_y * (*sd).u_now[id]      \
                         + (*sd).mu_y * ((*sd).u_now[id + 1])    \
@@ -94,7 +93,7 @@ void DetermineStepSizes(Subdomain *sd);
 /**
  * @brief finite difference in z direction
  * @param sd subdomain
- * @param id
+ * @param id index of grid point
  */
 #define FDZ(sd, id)     - 2 * (*sd).mu_z * (*sd).u_now[id]                                      \
                         + (*sd).mu_z * ((*sd).u_now[id + ((*sd).grid_l[1] * (*sd).grid_l[2])])  \
@@ -103,7 +102,7 @@ void DetermineStepSizes(Subdomain *sd);
 /**
  * @brief apply finite difference at point (i, j, k)
  * @param sd subdomain
- * @param id
+ * @param id index of grid point
  */
 #define FD(sd, id) ((sd->n_dims) == 2 ? FDX(sd, id) + FDY(sd, id) : FDX(sd, id) + FDY(sd, id) + FDZ(sd, id))
 

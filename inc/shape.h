@@ -30,7 +30,7 @@ void CoordShift(Subdomain *subdomain, float radius);
 /**
  * @brief laplace filter in x direction
  * @param sd subdomain
- * @param id index
+ * @param id index of grid point
  */
 #define LX(sd, id)  -2 * (*sd).shape_now[id]                   \
                     + (*sd).shape_now[id + (*sd).grid_l[1]]    \
@@ -39,7 +39,7 @@ void CoordShift(Subdomain *subdomain, float radius);
 /**
  * @brief laplace filter in y direction
  * @param sd subdomain
- * @param id index
+ * @param id index of grid point
  */
 #define LY(sd, id)  -2  * (*sd).shape_now[id]   \
                     + (*sd).shape_now[id + 1]   \
@@ -48,7 +48,7 @@ void CoordShift(Subdomain *subdomain, float radius);
 /**
  * @brief laplace filter in z direction
  * @param sd subdomain
- * @param id index
+ * @param id index of grid point
  */
 #define LZ(sd, id)  -2 * (*sd).shape_now[id]                                        \
                     + (*sd).shape_now[id + ((*sd).grid_l[1] * (*sd).grid_l[2])]     \
@@ -57,14 +57,14 @@ void CoordShift(Subdomain *subdomain, float radius);
 /**
  * @brief apply the laplace filter at point (i, j, k)
  * @param sd subdomain
- * @param id index
+ * @param id index of grid point
  */
 #define Laplace(sd, id) ((sd->n_dims) == 2 ? LX(sd, id) + LY(sd, id) : LX(sd, id) + LY(sd, id) + LZ(sd, id))
 
 /**
  * @brief after performing the laplace operation, assign values to the boundary, the interior domain, and the exterior domain.
  * @param sd subdomain
- * @param id index
+ * @param id index of grid point
  */
 #define AssignValue(sd, id) switch (sd->shape_next[id])                                                                       \
                             {                                                                                                 \

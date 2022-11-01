@@ -6,8 +6,6 @@
 #include <math.h>
 #include <memory.h>
 
-#include <mpi.h>
-
 void ComputeFD(Subdomain *sd, int bc, int time_steps)
 {
     CollectSubdomainData(sd, FDM, 0);
@@ -79,7 +77,6 @@ void BoundaryFD(Subdomain *sd, int bc, int id)
         } // end case VonNeumann
     } // end switch
 } // end void BoundaryFD(Subdomain *sd, int bc, int id)
-
 
 void CreateShapeArray(Subdomain *sd, float radius)
 {
@@ -177,8 +174,6 @@ void DetermineStepSizes(Subdomain *sd)
     sd->mu_x = (sd->dt / pow(sd->dx, 2.0)) * D;
     sd->mu_y = (sd->dt / pow(sd->dy, 2.0)) * D;
     sd->mu_z = (sd->dt / pow(sd->dz, 2.0)) * D;
-
-    //fprintf(stdout, "mu_x[0] = %f\n", sd->mu_x);
 
     // make sure step sizes are appropriate for stable results
     if (sd->mu_x > 0.125) { fprintf(stderr, "Step sizes are too large. dx = %.3f, mu_x = %.3f > 0.125\n", sd->dx, sd->mu_x); exit(1); }

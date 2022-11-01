@@ -61,7 +61,6 @@ Subdomain *CreateSubdomain(int nproc, int rank);
  */
 void LoadParameters(Subdomain *subdomain, int nproc, int rank);
 
-
 /**
  * @brief if the given global dimensions of the domain aren't divisible by the number of processors
  * then slightly adjust them
