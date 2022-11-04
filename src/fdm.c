@@ -83,7 +83,6 @@ void CreateShapeArray(Subdomain *sd, float radius)
     CoordShift(sd, radius);
 
     ShareGhosts(sd, Shape);
-    MPI_Barrier(sd->COMM_FDM);
 
     ApplyLaplaceFilter(sd);
     ShareGhosts(sd, Shape);

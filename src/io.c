@@ -17,7 +17,8 @@ void ReadInput(Subdomain *sd)
     fscanf(fp, "Ny = %d\n", &(*sd).grid_g[1]);
     fscanf(fp, "Nz = %d\n", &(*sd).grid_g[2]);
     fscanf(fp, "timestep = %f\n", &(*sd).dt);
-    CreateReactionNetwork(sd->network, fp);
+    //fscanf(fp, "reactions = %d\n", &((*(*sd).network).n_reactions));
+    //CreateReactionNetwork(sd->network, fp);
     fclose(fp);
 }
 

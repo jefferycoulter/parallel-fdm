@@ -37,10 +37,27 @@ from mpl_toolkits.mplot3d import Axes3D
 
 # ============================ plot shape array 2D ===========================
 
+data = np.genfromtxt("../data/data.csv", dtype=float, delimiter=",")
+#shape = shape.to_numpy()
+data = np.delete(data, -1, 0)
+data = np.delete(data, -1, 1)
+data = data.reshape(40, 100, 100)
+
+mask = np.ma.masked_where(data == 0, data)
+
+fig, ax = plt.subplots()
+fig.tight_layout()
+cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.70])
+im = ax.imshow(mask[20][:], origin="lower", cmap="YlOrRd")
+fig.colorbar(im, cbar_ax)
+
 # shape = np.genfromtxt("../data/shape.csv", dtype=float, delimiter=",")
 # #shape = shape.to_numpy()
 # shape = np.delete(shape, -1, 0)
+# #shape = np.delete(shape, -1, 1)
 # shape = shape.reshape(100, 100)
+
+# #mask = np.ma.masked_where(shape == 0, shape)
 
 # fig, ax = plt.subplots()
 # fig.tight_layout()
@@ -50,16 +67,31 @@ from mpl_toolkits.mplot3d import Axes3D
 
 # ============================ plot shape array 3D ===========================
 
-shape = np.genfromtxt("../data/data.csv", dtype=float, delimiter=",")
-#shape = shape.to_numpy()
-shape = np.delete(shape, -1, 0)
-shape = shape.reshape(100, 100, 100)
+# data = np.genfromtxt("../data/data.csv", dtype=float, delimiter=",")
+# #data = data.to_numpy()
+# data = np.delete(data, -1, 0)
+# data = np.delete(data, -1, 1)
+# data = data.reshape(40, 100, 100, 100)
 
-fig, ax = plt.subplots()
-fig.tight_layout()
-cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.70])
-im = ax.imshow(shape[50][:], origin="lower", cmap="binary")
-fig.colorbar(im, cbar_ax)
+# mask = np.ma.masked_where(data == 0, data)
+
+# fig, ax = plt.subplots()
+# fig.tight_layout()
+# cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.70])
+# im = ax.imshow(mask[0][50][:], origin="lower", cmap="YlOrRd")
+# fig.colorbar(im, cbar_ax)
+
+# shape = np.genfromtxt("../data/shape.csv", dtype=float, delimiter=",")
+# #data = data.to_numpy()
+# shape = np.delete(shape, -1, 0)
+# #shape = np.delete(shape, -1, 1)
+# shape = shape.reshape(100, 100, 100)
+
+# fig, ax = plt.subplots()
+# fig.tight_layout()
+# cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.70])
+# im = ax.imshow(shape[51][:], origin="lower", cmap="binary")
+# fig.colorbar(im, cbar_ax)
 
 # shape = np.genfromtxt("../data/shape.csv", dtype=float, delimiter=",")
 # #shape = shape.to_numpy()
@@ -73,20 +105,23 @@ fig.colorbar(im, cbar_ax)
 # ============================== create video 3D =============================
 
 # print("loading data")
-# shape = np.genfromtxt("../data/data.csv", dtype=float, delimiter=",")
+# data = np.genfromtxt("../data/data.csv", dtype=float, delimiter=",")
 # print("deleting column")
+# data = np.delete(data, -1, 0)
 # data = np.delete(data, -1, 1)
 # print("reshaping array")
-# data = data.reshape(1000, 100, 100, 100)
+# data = data.reshape(200, 100, 100, 100)
+
+# mask = np.ma.masked_where(data == 0, data)
 
 # fig_a = plt.subplots()
 # ax = plt.axes(projection="3d")
 # ims = []
 # print("creating plots")
 # for i in range(len(data)):
-#     im = ax.vocels(data[i][:][:][:], origin="lower", cmap="hot", animated=True)
+#     im = ax.voxels(mask[i][:][:][:50], cmap="YlOrRd", animated=True)
 #     if i == 0:
-#         im = ax.vocels(data[i][:][:][:], origin="lower", cmap="hot", animated=True)
+#         im = ax.voxels(mask[i][:][:][:50], cmap="YlOrRd", animated=True)
 #     ims.append([im])
 
 # ani = animation.ArtistAnimation(fig_a, ims, interval=5, blit=True, repeat_delay=1000)

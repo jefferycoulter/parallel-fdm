@@ -13,7 +13,7 @@ Subdomain *CreateSubdomain(int nproc, int rank)
     LoadParameters(subdomain, nproc, rank);
     for (int n = 0; n < subdomain->n_dims; n++)
     {
-        if ((subdomain->grid_g[n] % nproc) == 0)
+        if ((subdomain->grid_g[n] % nproc) != 0)
         {
             ResizeDomain(subdomain, n);
         }
@@ -30,9 +30,7 @@ void LoadParameters(Subdomain *sd, int n_proc, int rank)
 {
     sd->n_proc = n_proc;
     sd->rank = rank;
-    
     ReadInput(sd);
-    
 } // end void GetInput(Subdomain *sd, int n_proc, int rank)
 
 void ResizeDomain(Subdomain *sd, int dim)
@@ -118,16 +116,16 @@ void ShareGhosts(Subdomain *sd, int type)
     }
     else if (type == Shape)
     {
-        // send the top ghost of a subdomain to the subdomain above it
+        // send the top slice of a subdomain to the subdomain above it
         MPI_Sendrecv(&((*sd).shape_next[id_send_up]), (*sd).ghost_size, MPI_INT, (*sd).neighbors[Down], Up, 
                     &((*sd).shape_next[id_recv_up]), (*sd).ghost_size, MPI_INT, (*sd).neighbors[Up], Up, 
                     sd->COMM_FDM, &status);
-        // send the bottom ghost of a subdomain to the subdomain below it
+        // send the bottom slice of a subdomain to the subdomain below it
         MPI_Sendrecv(&((*sd).shape_next[id_send_down]), (*sd).ghost_size, MPI_INT, (*sd).neighbors[Up], Down, 
                     &((*sd).shape_next[id_recv_down]), (*sd).ghost_size, MPI_INT, (*sd).neighbors[Down], Down, 
                     sd->COMM_FDM, &status);
 
-        // send the top ghost of a subdomain to the subdomain above it
+        // send the top slice of a subdomain to the subdomain above it
         MPI_Sendrecv(&((*sd).shape_now[id_send_up]), (*sd).ghost_size, MPI_INT, (*sd).neighbors[Down], Up, 
                     &((*sd).shape_now[id_recv_up]), (*sd).ghost_size, MPI_INT, (*sd).neighbors[Up], Up, 
                     sd->COMM_FDM, &status);
@@ -191,8 +189,6 @@ void CollectSubdomainData(Subdomain *sd, int type, int time)
 {       
     int offset = sd->ghost_size;
     int global_id = ((((*sd).bounds_l[0] * (*sd).grid_g[1]) + (*sd).bounds_l[2]) * (*sd).grid_g[2] + (*sd).bounds_l[4]);  
-    
-    MPI_Barrier(sd->COMM_FDM);
 
     switch (type)
     {
@@ -303,5 +299,4 @@ void CoordShift(Subdomain *sd, float r)
             } // end k loop
         } // end j loop
     } // end i loop
-    MPI_Barrier(MPI_COMM_WORLD);
 } // end void CoordShift(Subdomain sd, float r)
