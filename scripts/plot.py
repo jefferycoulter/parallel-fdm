@@ -50,16 +50,26 @@ from mpl_toolkits.mplot3d import Axes3D
 
 # ============================ plot shape array 3D ===========================
 
-shape = np.genfromtxt("../data/data.csv", dtype=float, delimiter=",")
-#shape = shape.to_numpy()
-shape = np.delete(shape, -1, 0)
-shape = shape.reshape(100, 100, 100)
+data = np.genfromtxt("../data/data.csv", dtype=float, delimiter=",")
+data = np.delete(data,  -1, 0)
+data = np.delete(data,  -1, 1)
+data = data.reshape(40, 100, 100, 100)
 
 fig, ax = plt.subplots()
 fig.tight_layout()
 cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.70])
-im = ax.imshow(shape[50][:], origin="lower", cmap="binary")
+im = ax.imshow(data[0][50][:], origin="lower", cmap="binary")
 fig.colorbar(im, cbar_ax)
+
+# shape = np.genfromtxt("../data/shape.csv", dtype=float, delimiter=",")
+# shape = np.delete(shape, -1, 0)
+# shape = shape.reshape(100, 100, 100)
+
+# fig, ax = plt.subplots()
+# fig.tight_layout()
+# cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.70])
+# im = ax.imshow(shape[50][:], origin="lower", cmap="binary")
+# fig.colorbar(im, cbar_ax)
 
 # shape = np.genfromtxt("../data/shape.csv", dtype=float, delimiter=",")
 # #shape = shape.to_numpy()
