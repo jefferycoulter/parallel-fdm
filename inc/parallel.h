@@ -39,9 +39,24 @@ typedef struct
     int *shape_now; // shape array local to a process. used for determining fdm boundaries in case of irregular geometry
     int *shape_next;
     int *shape_g; // global shape array -- this might not be necessary. just used for debugging i think
+    
+    // species 1
+    float k1;
     float *u_now; // current result, used to compute next fdm iteration
     float *u_next; // stores data after fdm iteration
     float *u_global; // global solution array
+
+    // species 2
+    float k2;
+    float *v_now; // current result, used to compute next fdm iteration
+    float *v_next; // stores data after fdm iteration
+    float *v_global; // global solution array
+
+    // species 3
+    float k3;
+    float *uv_now; // current result, used to compute next fdm iteration
+    float *uv_next; // stores data after fdm iteration
+    float *uv_global; // global solution array
 } Subdomain;
 
 /**

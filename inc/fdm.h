@@ -77,33 +77,33 @@ void DetermineStepSizes(Subdomain *sd);
  * @param sd subdomain
  * @param id index of grid point
  */
-#define FDX(sd, id)     (1 - 2 * (*sd).mu_x) * (*sd).u_now[id]                \
-                        + (*sd).mu_x * ((*sd).u_now[id + (*sd).grid_l[1]])    \
-                        + (*sd).mu_x * ((*sd).u_now[id - (*sd).grid_l[1]])
+#define FDX(sd, u, id)     (1 - 2 * (*sd).mu_x) * u[id]                \
+                        + (*sd).mu_x * (u[id + (*sd).grid_l[1]])    \
+                        + (*sd).mu_x * (u[id - (*sd).grid_l[1]])
 
 /**
  * @brief finite difference in y direction
  * @param sd subdomain
  * @param id index of grid point
  */
-#define FDY(sd, id)     - 2 * (*sd).mu_y * (*sd).u_now[id]      \
-                        + (*sd).mu_y * ((*sd).u_now[id + 1])    \
-                        + (*sd).mu_y * ((*sd).u_now[id - 1])
+#define FDY(sd, u, id)     - 2 * (*sd).mu_y * u[id]      \
+                        + (*sd).mu_y * (u[id + 1])    \
+                        + (*sd).mu_y * (u[id - 1])
 
 /**
  * @brief finite difference in z direction
  * @param sd subdomain
  * @param id index of grid point
  */
-#define FDZ(sd, id)     - 2 * (*sd).mu_z * (*sd).u_now[id]                                      \
-                        + (*sd).mu_z * ((*sd).u_now[id + ((*sd).grid_l[1] * (*sd).grid_l[2])])  \
-                        + (*sd).mu_z * ((*sd).u_now[id - ((*sd).grid_l[1] * (*sd).grid_l[2])])
+#define FDZ(sd, u, id)     - 2 * (*sd).mu_z * u[id]                                      \
+                        + (*sd).mu_z * (u[id + ((*sd).grid_l[1] * (*sd).grid_l[2])])  \
+                        + (*sd).mu_z * (u[id - ((*sd).grid_l[1] * (*sd).grid_l[2])])
 
 /**
  * @brief apply finite difference at point (i, j, k)
  * @param sd subdomain
  * @param id index of grid point
  */
-#define FD(sd, id) ((sd->n_dims) == 2 ? FDX(sd, id) + FDY(sd, id) : FDX(sd, id) + FDY(sd, id) + FDZ(sd, id))
+#define FD(sd, u, id) ((sd->n_dims) == 2 ? FDX(sd, u, id) + FDY(sd, u, id) : FDX(sd, u, id) + FDY(sd, u, id) + FDZ(sd, u, id))
 
 #endif // FDM_INCL

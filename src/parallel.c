@@ -13,7 +13,7 @@ Subdomain *CreateSubdomain(int nproc, int rank)
     LoadParameters(subdomain, nproc, rank);
     for (int n = 0; n < subdomain->n_dims; n++)
     {
-        if ((subdomain->grid_g[n] % nproc) == 0)
+        if ((subdomain->grid_g[n] % nproc) != 0)
         {
             ResizeDomain(subdomain, n);
         }
@@ -30,6 +30,8 @@ void LoadParameters(Subdomain *sd, int n_proc, int rank)
 {
     sd->n_proc = n_proc;
     sd->rank = rank;
+
+    sd->k1 = sd->k2 = sd->k3 = 1.0;
     
     ReadInput(sd);
     
@@ -98,6 +100,7 @@ void ShareGhosts(Subdomain *sd, int type)
 
     if (type == FDM)
     {
+        // species 1
         // send the top slice of a subdomain to the subdomain above it
         MPI_Sendrecv(&((*sd).u_next[id_send_up]), (*sd).ghost_size, MPI_FLOAT, (*sd).neighbors[Down], Up, 
                     &((*sd).u_next[id_recv_up]), (*sd).ghost_size, MPI_FLOAT, (*sd).neighbors[Up], Up, 
@@ -114,6 +117,44 @@ void ShareGhosts(Subdomain *sd, int type)
         // send the bottom slice of a subdomain to the subdomain below it
         MPI_Sendrecv(&((*sd).u_now[id_send_down]), (*sd).ghost_size, MPI_FLOAT, (*sd).neighbors[Up], Down, 
                     &((*sd).u_now[id_recv_down]), (*sd).ghost_size, MPI_FLOAT, (*sd).neighbors[Down], Down, 
+                    sd->COMM_FDM, &status);
+
+        // species 2
+        // send the top slice of a subdomain to the subdomain above it
+        MPI_Sendrecv(&((*sd).v_next[id_send_up]), (*sd).ghost_size, MPI_FLOAT, (*sd).neighbors[Down], Up, 
+                    &((*sd).v_next[id_recv_up]), (*sd).ghost_size, MPI_FLOAT, (*sd).neighbors[Up], Up, 
+                    sd->COMM_FDM, &status);
+        // send the bottom slice of a subdomain to the subdomain below it
+        MPI_Sendrecv(&((*sd).v_next[id_send_down]), (*sd).ghost_size, MPI_FLOAT, (*sd).neighbors[Up], Down, 
+                    &((*sd).v_next[id_recv_down]), (*sd).ghost_size, MPI_FLOAT, (*sd).neighbors[Down], Down, 
+                    sd->COMM_FDM, &status);
+
+        // send the top slice of a subdomain to the subdomain above it
+        MPI_Sendrecv(&((*sd).v_now[id_send_up]), (*sd).ghost_size, MPI_FLOAT, (*sd).neighbors[Down], Up, 
+                    &((*sd).v_now[id_recv_up]), (*sd).ghost_size, MPI_FLOAT, (*sd).neighbors[Up], Up, 
+                    sd->COMM_FDM, &status);
+        // send the bottom slice of a subdomain to the subdomain below it
+        MPI_Sendrecv(&((*sd).v_now[id_send_down]), (*sd).ghost_size, MPI_FLOAT, (*sd).neighbors[Up], Down, 
+                    &((*sd).v_now[id_recv_down]), (*sd).ghost_size, MPI_FLOAT, (*sd).neighbors[Down], Down, 
+                    sd->COMM_FDM, &status);
+
+        // species 3
+        // send the top slice of a subdomain to the subdomain above it
+        MPI_Sendrecv(&((*sd).uv_next[id_send_up]), (*sd).ghost_size, MPI_FLOAT, (*sd).neighbors[Down], Up, 
+                    &((*sd).uv_next[id_recv_up]), (*sd).ghost_size, MPI_FLOAT, (*sd).neighbors[Up], Up, 
+                    sd->COMM_FDM, &status);
+        // send the bottom slice of a subdomain to the subdomain below it
+        MPI_Sendrecv(&((*sd).uv_next[id_send_down]), (*sd).ghost_size, MPI_FLOAT, (*sd).neighbors[Up], Down, 
+                    &((*sd).uv_next[id_recv_down]), (*sd).ghost_size, MPI_FLOAT, (*sd).neighbors[Down], Down, 
+                    sd->COMM_FDM, &status);
+
+        // send the top slice of a subdomain to the subdomain above it
+        MPI_Sendrecv(&((*sd).uv_now[id_send_up]), (*sd).ghost_size, MPI_FLOAT, (*sd).neighbors[Down], Up, 
+                    &((*sd).uv_now[id_recv_up]), (*sd).ghost_size, MPI_FLOAT, (*sd).neighbors[Up], Up, 
+                    sd->COMM_FDM, &status);
+        // send the bottom slice of a subdomain to the subdomain below it
+        MPI_Sendrecv(&((*sd).uv_now[id_send_down]), (*sd).ghost_size, MPI_FLOAT, (*sd).neighbors[Up], Down, 
+                    &((*sd).uv_now[id_recv_down]), (*sd).ghost_size, MPI_FLOAT, (*sd).neighbors[Down], Down, 
                     sd->COMM_FDM, &status);
     }
     else if (type == Shape)
@@ -201,15 +242,33 @@ void CollectSubdomainData(Subdomain *sd, int type, int time)
             {
                 case 0: // initial state
                 {
+                    // species 1
                     MPI_Gather(&((*sd).u_now[offset]), (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT, 
                         &((*sd).u_global[global_id]), (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT,
+                        ROOT, sd->COMM_FDM);
+                    // species 2
+                    MPI_Gather(&((*sd).v_now[offset]), (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT, 
+                        &((*sd).v_global[global_id]), (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT,
+                        ROOT, sd->COMM_FDM);
+                    // species 3
+                    MPI_Gather(&((*sd).uv_now[offset]), (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT, 
+                        &((*sd).uv_global[global_id]), (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT,
                         ROOT, sd->COMM_FDM);
                     break;
                 }
                 default: // all other time steps
                 {
+                    // species 1
                     MPI_Gather(&((*sd).u_next[offset]), (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT, 
                         &((*sd).u_global[global_id]), (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT,
+                        ROOT, sd->COMM_FDM);
+                    // species 2
+                    MPI_Gather(&((*sd).v_next[offset]), (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT, 
+                        &((*sd).v_global[global_id]), (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT,
+                        ROOT, sd->COMM_FDM);
+                    // species 3
+                    MPI_Gather(&((*sd).uv_next[offset]), (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT, 
+                        &((*sd).uv_global[global_id]), (*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2], MPI_FLOAT,
                         ROOT, sd->COMM_FDM);
                     break;
                 }
@@ -243,10 +302,23 @@ void AllocateArraysFDM(Subdomain *sd)
     memset((*sd).shape_next, 0, sizeof(int) * local_size);
 
     // local solution arrays
+    // species 1
     (*sd).u_next = (float*)malloc(sizeof(float) * local_size);
     (*sd).u_now = (float*)malloc(sizeof(float) * local_size);
     memset((*sd).u_next, 0, sizeof(float) * local_size);
     memset((*sd).u_now, 0, sizeof(float) * local_size);
+
+    // species 2
+    (*sd).v_next = (float*)malloc(sizeof(float) * local_size);
+    (*sd).v_now = (float*)malloc(sizeof(float) * local_size);
+    memset((*sd).v_next, 0, sizeof(float) * local_size);
+    memset((*sd).v_now, 0, sizeof(float) * local_size);
+
+    // species 3
+    (*sd).uv_next = (float*)malloc(sizeof(float) * local_size);
+    (*sd).uv_now = (float*)malloc(sizeof(float) * local_size);
+    memset((*sd).uv_next, 0, sizeof(float) * local_size);
+    memset((*sd).uv_now, 0, sizeof(float) * local_size);
 
     if (sd->rank == ROOT)
     {
@@ -254,8 +326,15 @@ void AllocateArraysFDM(Subdomain *sd)
         (*sd).shape_g = (int*)malloc(sizeof(int) * global_size);
         memset((*sd).shape_g, 0, sizeof(int) * global_size);
         
+        // species 1
         (*sd).u_global = (float*)malloc(sizeof(float) * global_size);
         memset((*sd).u_global, 0, sizeof(float) * global_size);
+        // species 2
+        (*sd).v_global = (float*)malloc(sizeof(float) * global_size);
+        memset((*sd).v_global, 0, sizeof(float) * global_size);
+        // species 3
+        (*sd).uv_global = (float*)malloc(sizeof(float) * global_size);
+        memset((*sd).uv_global, 0, sizeof(float) * global_size);
     }
 } // end void AllocateArraysFDM(Subdomain sd)
 
@@ -265,11 +344,17 @@ void SubdomainCleanUp(Subdomain *sd)
     free((*sd).shape_next);
     free((*sd).u_now);
     free((*sd).u_next);
+    free((*sd).v_now);
+    free((*sd).v_next);
+    free((*sd).uv_now);
+    free((*sd).uv_next);
 
     if (sd->rank == ROOT)
     {
         free((*sd).shape_g);
         free((*sd).u_global);
+        free((*sd).v_global);
+        free((*sd).uv_global);
     }
 
     free(sd);

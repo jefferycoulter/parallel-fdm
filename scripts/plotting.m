@@ -1,6 +1,10 @@
-data = load('../data/data.csv');
+data = load('../data/data_uv.csv');
 data(end,:) = [];
 data = reshape(data, [40, 100, 100, 100]);
+
+video = VideoWriter("../graphics/animations/uv3d", 'MPEG-4');
+%video.FrameRate = 1;
+open(video);
 
 for t = 1:size(data,1)
     m = data(t,:);
@@ -9,6 +13,13 @@ for t = 1:size(data,1)
     s = slice(m, 50, 50, 50);
     %s.FaceColor = "interp";
     colorbar
-    clim([-10 10])
+    %clim([-10 10])
+    pause(0.005)
+    frame = getframe(gcf);
+
+    writeVideo(video, frame);
+    
     drawnow
 end
+
+close(video)

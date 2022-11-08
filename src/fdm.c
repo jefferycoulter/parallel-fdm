@@ -54,11 +54,15 @@ void FTCS(Subdomain *sd, int bc)
     // note:
     // sd.grid_l[2] = 1 for 2D case, so multiplying it here doesn't matter if the problem is 2D
     memcpy(sd->u_now, sd->u_next, sizeof(float) * ((*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2] + (2 * (*sd).ghost_size)));
+    memcpy(sd->v_now, sd->v_next, sizeof(float) * ((*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2] + (2 * (*sd).ghost_size)));
+    memcpy(sd->uv_now, sd->uv_next, sizeof(float) * ((*sd).grid_l[0] * (*sd).grid_l[1] * (*sd).grid_l[2] + (2 * (*sd).ghost_size)));
 } // end void FTCS(Subdomain *sd, int bc)
 
 void InteriorFD(Subdomain *sd, int id)
 {
-    sd->u_next[id] = FD(sd, id);
+    sd->u_next[id] = FD(sd, (*sd).u_now, id) - ((*sd).k1 * (*sd).dt * (*sd).u_now[id] * (*sd).v_now[id]);
+    sd->v_next[id] = FD(sd, (*sd).v_now, id) - ((*sd).k2 * (*sd).dt * (*sd).u_now[id] * (*sd).v_now[id]);
+    sd->uv_next[id] = FD(sd, (*sd).uv_now, id) + ((*sd).k3 * (*sd).dt * (*sd).u_now[id] * (*sd).v_now[id]);
 } // end void InteriorFD(Subdomain *sd, int id)
 
 void BoundaryFD(Subdomain *sd, int bc, int id)
@@ -68,6 +72,8 @@ void BoundaryFD(Subdomain *sd, int bc, int id)
         case Dirichlet:
         {
             sd->u_next[id] = sd->u_now[id];
+            sd->v_next[id] = sd->v_now[id];
+            sd->uv_next[id] = sd->uv_now[id];
             break;
         } // end case Dirichlet
         case VonNeumann:
@@ -126,6 +132,8 @@ void SetBoundaryConditions(Subdomain *sd)
                 {
                     case Boundary:
                         sd->u_now[id] = bc;
+                        sd->v_now[id] = 0.0;
+                        sd->uv_now[id] = 0.0;
                         break;
                     default:
                         break;
@@ -140,7 +148,7 @@ void SetInitialConditions(Subdomain *sd)
     int id;
     int offset = sd->ghost_size;
 
-    int ic = -10.0;
+    int ic = 0.0;
 
     for (int i = 0; i < sd->grid_l[0]; i++)
     {
@@ -153,6 +161,18 @@ void SetInitialConditions(Subdomain *sd)
                 {
                     case Inside:
                         sd->u_now[id] = ic;
+                        sd->uv_now[id] = ic;
+                        if (((*sd).bounds_l[0] + i == ((*sd).grid_g[0] / 2)) && \
+                            ((*sd).bounds_l[2] + j == ((*sd).grid_g[1] / 2)) && \
+                            ((*sd).bounds_l[4] + k == ((*sd).grid_g[2] / 2)))
+                        {
+                            fprintf(stdout, "set v source at (%d, %d, %d)\n", (*sd).bounds_l[0] + i, (*sd).bounds_l[2] + j, (*sd).bounds_l[4] + k);
+                            sd->v_now[id] = 20.0;
+                        }
+                        else
+                        {
+                            sd->v_now[id] = ic;
+                        }
                         break;
                     default:
                         break;
